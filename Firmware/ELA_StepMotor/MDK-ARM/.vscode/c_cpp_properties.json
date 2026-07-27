@@ -3,18 +3,21 @@
         {
             "name": "ELA_StepMotor",
             "includePath": [
-                "c:\\Users\\admin\\Desktop\\XM\\ELACO_StepMotor\\Firmware\\ELA_StepMotor\\Core\\Inc",
-                "c:\\Users\\admin\\Desktop\\XM\\ELACO_StepMotor\\Firmware\\ELA_StepMotor\\Drivers\\STM32F1xx_HAL_Driver\\Inc",
-                "c:\\Users\\admin\\Desktop\\XM\\ELACO_StepMotor\\Firmware\\ELA_StepMotor\\Drivers\\STM32F1xx_HAL_Driver\\Inc\\Legacy",
-                "c:\\Users\\admin\\Desktop\\XM\\ELACO_StepMotor\\Firmware\\ELA_StepMotor\\Drivers\\CMSIS\\Device\\ST\\STM32F1xx\\Include",
-                "c:\\Users\\admin\\Desktop\\XM\\ELACO_StepMotor\\Firmware\\ELA_StepMotor\\Drivers\\CMSIS\\Include",
-                "c:\\Users\\admin\\Desktop\\XM\\ELACO_StepMotor\\Firmware\\ELA_StepMotor\\ELA_LIB",
-                "c:\\Users\\admin\\Desktop\\XM\\ELACO_StepMotor\\Firmware\\ELA_StepMotor\\FreeModbus\\modbus",
-                "c:\\Users\\admin\\Desktop\\XM\\ELACO_StepMotor\\Firmware\\ELA_StepMotor\\ModTest",
-                "D:\\keil5\\ARM\\ARMCC\\include",
-                "c:\\Users\\admin\\Desktop\\XM\\ELACO_StepMotor\\Firmware\\ELA_StepMotor\\MDK-ARM",
-                "c:\\Users\\admin\\Desktop\\XM\\ELACO_StepMotor\\Firmware\\ELA_StepMotor\\Core\\Src",
-                "c:\\Users\\admin\\Desktop\\XM\\ELACO_StepMotor\\Firmware\\ELA_StepMotor\\Drivers\\STM32F1xx_HAL_Driver\\Src"
+                "e:\\Desktop\\XM\\ELACO_StepMotor\\Firmware\\ELA_StepMotor\\Core\\Inc",
+                "e:\\Desktop\\XM\\ELACO_StepMotor\\Firmware\\ELA_StepMotor\\Drivers\\STM32F1xx_HAL_Driver\\Inc",
+                "e:\\Desktop\\XM\\ELACO_StepMotor\\Firmware\\ELA_StepMotor\\Drivers\\STM32F1xx_HAL_Driver\\Inc\\Legacy",
+                "e:\\Desktop\\XM\\ELACO_StepMotor\\Firmware\\ELA_StepMotor\\Drivers\\CMSIS\\Device\\ST\\STM32F1xx\\Include",
+                "e:\\Desktop\\XM\\ELACO_StepMotor\\Firmware\\ELA_StepMotor\\Drivers\\CMSIS\\Include",
+                "e:\\Desktop\\XM\\ELACO_StepMotor\\Firmware\\ELA_StepMotor\\ELA_LIB",
+                "e:\\Desktop\\XM\\ELACO_StepMotor\\Firmware\\ELA_StepMotor\\FreeModbus\\modbus",
+                "e:\\Desktop\\XM\\ELACO_StepMotor\\Firmware\\ELA_StepMotor\\ModTest",
+                "C:\\Keil_v5\\ARM\\ARMCC\\include",
+                "C:\\Keil_v5\\ARM\\ARMCC\\include\\arm_linux",
+                "C:\\Keil_v5\\ARM\\ARMCC\\include\\arm_linux_compat",
+                "C:\\Keil_v5\\ARM\\ARMCC\\include\\rw",
+                "e:\\Desktop\\XM\\ELACO_StepMotor\\Firmware\\ELA_StepMotor\\MDK-ARM",
+                "e:\\Desktop\\XM\\ELACO_StepMotor\\Firmware\\ELA_StepMotor\\Core\\Src",
+                "e:\\Desktop\\XM\\ELACO_StepMotor\\Firmware\\ELA_StepMotor\\Drivers\\STM32F1xx_HAL_Driver\\Src"
             ],
             "defines": [
                 "USE_HAL_DRIVER",

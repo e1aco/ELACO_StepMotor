@@ -112,7 +112,7 @@ uint16_t MT6816_UpdateAngle(void)
             s_rectified_angle = s_raw_angle;
         }
     }
-
+    
     return s_rectified_angle;
 }
 

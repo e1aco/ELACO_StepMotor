@@ -1,0 +1,43 @@
+*** Using Compiler 'V5.06 update 7 (build 960)', folder: 'C:\Keil_v5\ARM\ARMCC\Bin'
+Build target 'ELA_StepMotor'
+compiling ela_tb67h450.c...
+..\ELA_LIB\ela_tb67h450.c(41): error:  #65: expected a ";"
+  {
+..\ELA_LIB\ela_tb67h450.c(125): warning:  #12-D: parsing restarts here after previous syntax error
+      current_abs = tb67h450_abs(current_ma);
+..\ELA_LIB\ela_tb67h450.c(126): warning:  #111-D: statement is unreachable
+      dac_reg = (unsigned short)
+..\ELA_LIB\ela_tb67h450.c(126): error:  #20: identifier "dac_reg" is undefined
+      dac_reg = (unsigned short)
+..\ELA_LIB\ela_tb67h450.c(127): error:  #20: identifier "current_abs" is undefined
+          ((current_abs * DAC_SCALE_FACTOR) >> SIN_SCALE);
+..\ELA_LIB\ela_tb67h450.c(131): error:  #20: identifier "abs_a" is undefined
+      abs_a = tb67h450_abs(g_tb67h450_a_st.sin_map_data);
+..\ELA_LIB\ela_tb67h450.c(132): error:  #20: identifier "abs_b" is undefined
+      abs_b = tb67h450_abs(g_tb67h450_b_st.sin_map_data);
+..\ELA_LIB\ela_tb67h450.c(147): warning:  #223-D: function "tb67h450_set_dire_a" declared implicitly
+          tb67h450_set_dire_a(true, false);
+..\ELA_LIB\ela_tb67h450.c(149): warning:  #223-D: function "tb67h450_set_dire_a" declared implicitly
+          tb67h450_set_dire_a(false, true);
+..\ELA_LIB\ela_tb67h450.c(151): warning:  #223-D: function "tb67h450_set_dire_a" declared implicitly
+          tb67h450_set_dire_a(true, true);
+..\ELA_LIB\ela_tb67h450.c(155): warning:  #223-D: function "tb67h450_set_dire_b" declared implicitly
+          tb67h450_set_dire_b(true, false);
+..\ELA_LIB\ela_tb67h450.c(157): warning:  #223-D: function "tb67h450_set_dire_b" declared implicitly
+          tb67h450_set_dire_b(false, true);
+..\ELA_LIB\ela_tb67h450.c(159): warning:  #223-D: function "tb67h450_set_dire_b" declared implicitly
+          tb67h450_set_dire_b(true, true);
+..\ELA_LIB\ela_tb67h450.c(169): warning:  #223-D: function "tb67h450_set_dire_a" declared implicitly
+      tb67h450_set_dire_a(true, true);
+..\ELA_LIB\ela_tb67h450.c(170): warning:  #223-D: function "tb67h450_set_dire_b" declared implicitly
+      tb67h450_set_dire_b(true, true);
+..\ELA_LIB\ela_tb67h450.c(179): warning:  #223-D: function "tb67h450_set_dire_a" declared implicitly
+      tb67h450_set_dire_a(false, false);
+..\ELA_LIB\ela_tb67h450.c(180): warning:  #223-D: function "tb67h450_set_dire_b" declared implicitly
+      tb67h450_set_dire_b(false, false);
+..\ELA_LIB\ela_tb67h450.c(38): error:  #114: function "tb67h450_set_two_coils_current"  was referenced but not defined
+  static void tb67h450_set_two_coils_current(
+..\ELA_LIB\ela_tb67h450.c: 12 warnings, 6 errors
+"ELA_StepMotor\ELA_StepMotor.axf" - 6 Error(s), 12 Warning(s).
+Target not created.
+Build Time Elapsed:  00:00:02

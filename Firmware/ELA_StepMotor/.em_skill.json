@@ -1,0 +1,11 @@
+{
+  "tools": {
+    "cmake": "E:\\STM32CubeCLT_1.21.0\\CMake\\bin\\cmake.EXE",
+    "ninja": "E:\\STM32CubeCLT_1.21.0\\Ninja\\bin\\ninja.EXE",
+    "make": "E:\\qp\\qtools\\bin\\make.EXE",
+    "arm-none-eabi-gcc": "E:\\STM32CubeCLT_1.21.0\\GNU-tools-for-STM32\\bin\\arm-none-eabi-gcc.EXE",
+    "arm-none-eabi-gdb": "E:\\STM32CubeCLT_1.21.0\\GNU-tools-for-STM32\\bin\\arm-none-eabi-gdb.EXE",
+    "UV4": "C:\\Keil_v5\\UV4\\UV4.exe",
+    "openocd": "E:\\Desktop\\XM\\ELACO_StepMotor\\Firmware\\ELA_StepMotor\\tools\\openocd\\xpack-openocd-0.12.0-7\\bin\\openocd.exe"
+  }
+}

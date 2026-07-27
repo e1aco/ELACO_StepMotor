@@ -1,0 +1,11 @@
+{
+  "type": "embedded",
+  "name": "ELA_StepMotor",
+  "created": "2026-07-26",
+  "embedded": {
+    "chip": "STM32F103RET6",
+    "toolchain": "Keil MDK-ARM",
+    "interface": "CubeMX"
+  },
+  "plugins": []
+}

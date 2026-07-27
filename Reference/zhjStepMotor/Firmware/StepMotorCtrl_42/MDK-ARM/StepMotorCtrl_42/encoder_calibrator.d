@@ -1,7 +1,7 @@
 stepmotorctrl_42\encoder_calibrator.o: ..\User\ENCODER\encoder_calibrator.c
 stepmotorctrl_42\encoder_calibrator.o: ..\User\ENCODER\encoder_calibrator.h
-stepmotorctrl_42\encoder_calibrator.o: D:\keil5\ARM\ARM_Compiler_5.06u7\Bin\..\include\stdint.h
-stepmotorctrl_42\encoder_calibrator.o: D:\keil5\ARM\ARM_Compiler_5.06u7\Bin\..\include\stdbool.h
+stepmotorctrl_42\encoder_calibrator.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdint.h
+stepmotorctrl_42\encoder_calibrator.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdbool.h
 stepmotorctrl_42\encoder_calibrator.o: ..\User\MT6816\mt6816.h
 stepmotorctrl_42\encoder_calibrator.o: ..\User\DRIVER\tb67h450.h
 stepmotorctrl_42\encoder_calibrator.o: ..\User\EEPROM\stockpile_f103cb.h
@@ -19,7 +19,7 @@ stepmotorctrl_42\encoder_calibrator.o: ../Drivers/CMSIS/Include/cmsis_armcc.h
 stepmotorctrl_42\encoder_calibrator.o: ../Drivers/CMSIS/Device/ST/STM32F1xx/Include/system_stm32f1xx.h
 stepmotorctrl_42\encoder_calibrator.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h
 stepmotorctrl_42\encoder_calibrator.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h
-stepmotorctrl_42\encoder_calibrator.o: D:\keil5\ARM\ARM_Compiler_5.06u7\Bin\..\include\stddef.h
+stepmotorctrl_42\encoder_calibrator.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stddef.h
 stepmotorctrl_42\encoder_calibrator.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc_ex.h
 stepmotorctrl_42\encoder_calibrator.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio.h
 stepmotorctrl_42\encoder_calibrator.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio_ex.h
@@ -41,4 +41,4 @@ stepmotorctrl_42\encoder_calibrator.o: ../Core/Inc/gpio.h
 stepmotorctrl_42\encoder_calibrator.o: ../Core/Inc/spi.h
 stepmotorctrl_42\encoder_calibrator.o: ../Core/Inc/tim.h
 stepmotorctrl_42\encoder_calibrator.o: ..\User\EEPROM\stockpile_config.h
-stepmotorctrl_42\encoder_calibrator.o: D:\keil5\ARM\ARM_Compiler_5.06u7\Bin\..\include\stdlib.h
+stepmotorctrl_42\encoder_calibrator.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdlib.h

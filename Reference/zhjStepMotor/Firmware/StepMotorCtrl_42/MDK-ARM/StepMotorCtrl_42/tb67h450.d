@@ -1,7 +1,7 @@
 stepmotorctrl_42\tb67h450.o: ..\User\DRIVER\tb67h450.c
 stepmotorctrl_42\tb67h450.o: ..\User\DRIVER\tb67h450.h
-stepmotorctrl_42\tb67h450.o: D:\keil5\ARM\ARM_Compiler_5.06u7\Bin\..\include\stdint.h
-stepmotorctrl_42\tb67h450.o: D:\keil5\ARM\ARM_Compiler_5.06u7\Bin\..\include\stdbool.h
+stepmotorctrl_42\tb67h450.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdint.h
+stepmotorctrl_42\tb67h450.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdbool.h
 stepmotorctrl_42\tb67h450.o: ..\User\DRIVER\sin_form.h
 stepmotorctrl_42\tb67h450.o: ../Core/Inc/tim.h
 stepmotorctrl_42\tb67h450.o: ../Core/Inc/main.h
@@ -18,7 +18,7 @@ stepmotorctrl_42\tb67h450.o: ../Drivers/CMSIS/Include/cmsis_armcc.h
 stepmotorctrl_42\tb67h450.o: ../Drivers/CMSIS/Device/ST/STM32F1xx/Include/system_stm32f1xx.h
 stepmotorctrl_42\tb67h450.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h
 stepmotorctrl_42\tb67h450.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h
-stepmotorctrl_42\tb67h450.o: D:\keil5\ARM\ARM_Compiler_5.06u7\Bin\..\include\stddef.h
+stepmotorctrl_42\tb67h450.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stddef.h
 stepmotorctrl_42\tb67h450.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc_ex.h
 stepmotorctrl_42\tb67h450.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio.h
 stepmotorctrl_42\tb67h450.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio_ex.h

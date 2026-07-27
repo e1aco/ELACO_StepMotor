@@ -60,7 +60,7 @@ void TB67H450_SetFocCurrentVector(uint32_t _directionInCount, int32_t _current_m
     int32_t current_abs;
     
     /* 1. 计算A/B相的正弦表指针 */
-    s_phaseB.sinMapPtr = _directionInCount & 0x000003FF; // 1024个位置对应0-360度，取模1024得到指针
+    s_phaseB.sinMapPtr = _directionInCount & 0x000003FF;
     s_phaseA.sinMapPtr = (s_phaseB.sinMapPtr + 256) & 0x000003FF;
     
     /* 2. 查正弦表 */
@@ -74,7 +74,7 @@ void TB67H450_SetFocCurrentVector(uint32_t _directionInCount, int32_t _current_m
 		// 5083 >> 12 = 5083 / 4096 ≈ 1.24
     dac_reg = (uint32_t)(current_abs * 5083) >> 12;
     dac_reg = dac_reg & 0x00000FFF;
-
+    
     /* 取绝对值再乘 */
     int16_t absA = (s_phaseA.sinMapData > 0) ? s_phaseA.sinMapData : -s_phaseA.sinMapData;
     int16_t absB = (s_phaseB.sinMapData > 0) ? s_phaseB.sinMapData : -s_phaseB.sinMapData;

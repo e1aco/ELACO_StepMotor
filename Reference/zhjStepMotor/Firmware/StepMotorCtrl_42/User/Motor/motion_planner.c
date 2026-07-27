@@ -235,7 +235,7 @@ void PositionTracker_NewTask(int32_t realLocation, int32_t realSpeed)
 void PositionTracker_CalcSoftGoal(int32_t goalPosition)
 {
     int32_t delta = goalPosition - s_track_position;  // 剩余距离
-
+    
     /* ==================== 情况1：已到达目标位置 ==================== */
     if (delta == 0) {
         // 速度很小时（在刹车阈值内），直接锁定停止
@@ -244,7 +244,7 @@ void PositionTracker_CalcSoftGoal(int32_t goalPosition)
             s_velocity_integral_pos = 0;
             s_track_velocity_pos = 0;
             s_position_integral = 0;
-        }
+        } 
         // 速度为正，需要减速到0
         else if (s_track_velocity_pos > 0) {
             CalcPositionVelocityIntegral(-s_velocity_down_acc);  // 减速
@@ -252,7 +252,7 @@ void PositionTracker_CalcSoftGoal(int32_t goalPosition)
                 s_velocity_integral_pos = 0;
                 s_track_velocity_pos = 0;
             }
-        }
+        } 
         // 速度为负，需要减速到0
         else if (s_track_velocity_pos < 0) {
             CalcPositionVelocityIntegral(s_velocity_down_acc);   // 减速（反向）

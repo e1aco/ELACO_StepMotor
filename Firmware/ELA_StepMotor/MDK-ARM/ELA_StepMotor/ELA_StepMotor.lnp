@@ -31,9 +31,14 @@
 "ela_stepmotor\system_stm32f1xx.o"
 "ela_stepmotor\elaco_main.o"
 "ela_stepmotor\ela_mt6816.o"
+"ela_stepmotor\ela_tb67h450.o"
+"ela_stepmotor\ela_sinform.o"
 "ela_stepmotor\ela_uart.o"
 "ela_stepmotor\ela_can_queue.o"
 "ela_stepmotor\ela_uart_queue.o"
+"ela_stepmotor\ela_uart_drv.o"
+"ela_stepmotor\ela_tb67h450_drv.o"
+"ela_stepmotor\ela_mt6816_drv.o"
 "ela_stepmotor\mb.o"
 "ela_stepmotor\mbascii.o"
 "ela_stepmotor\mbcrc.o"
@@ -51,6 +56,7 @@
 "ela_stepmotor\portserial.o"
 "ela_stepmotor\porttimer.o"
 "ela_stepmotor\test_mt6816.o"
+"ela_stepmotor\test_tb67h450.o"
 --library_type=microlib --strict --scatter "ELA_StepMotor\ELA_StepMotor.sct"
 --summary_stderr --info summarysizes --map --load_addr_map_info --xref --callgraph --symbols
 --info sizes --info totals --info unused --info veneers

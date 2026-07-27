@@ -70,10 +70,10 @@ static int32_t CycleSub(int32_t a, int32_t b, int32_t cyc)
  */
 static int32_t CycleAvg(int32_t a, int32_t b, int32_t cyc)
 {
-    int32_t sub = a - b;            // 计算差值
-    int32_t ave = (a + b) >> 1;     // 计算平均值
-    if (abs(sub) > (cyc >> 1)) {    // 如果差值超过半圈，说明跨越了0°点，需要调整平均值
-        if (ave >= (cyc >> 1))      // 如果平均值在半圈以上，说明应该减去半圈；否则应该加上半圈
+    int32_t sub = a - b;
+    int32_t ave = (a + b) >> 1;
+    if (abs(sub) > (cyc >> 1)) {
+        if (ave >= (cyc >> 1))
             ave -= (cyc >> 1);
         else
             ave += (cyc >> 1);
@@ -119,23 +119,23 @@ static int32_t CycleDataAvg(const uint16_t* data, uint16_t len, int32_t cyc)
 static void CheckData(void)
 {
     int32_t sub;
-    int32_t step_res = ENC_RESOLUTION / HARD_STEPS; // 每个机械步对应的理论角度差
+    int32_t step_res = ENC_RESOLUTION / HARD_STEPS;
     uint32_t step_num = 0;
-    
+
     /* 1. 正向和反向数据平均 */
     for (int i = 0; i < HARD_STEPS + 1; i++) {
-        sample_fwd[i] = CycleAvg(sample_fwd[i], sample_rev[i], ENC_RESOLUTION); // 取平均
+        sample_fwd[i] = CycleAvg(sample_fwd[i], sample_rev[i], ENC_RESOLUTION);
     }
-    
+
     /* 2. 检查方向 */
-    sub = CycleSub(sample_fwd[0], sample_fwd[HARD_STEPS - 1], ENC_RESOLUTION); 
+    sub = CycleSub(sample_fwd[0], sample_fwd[HARD_STEPS - 1], ENC_RESOLUTION);
     if (sub == 0) {
         cali_error = 1;
         printf("Error: Direction zero\r\n");
         return;
     }
-    go_dir = (sub > 0); // 如果第一个点比最后一个点大，说明是正转方向；反之则是反转方向(主要是确定你自己认为哪边是正转)
-    
+    go_dir = (sub > 0);
+
     /* 3. 检查连续性 */
     for (int i = 1; i < HARD_STEPS; i++) {
         sub = CycleSub(sample_fwd[i], sample_fwd[i-1], ENC_RESOLUTION);
@@ -160,12 +160,12 @@ static void CheckData(void)
             return;
         }
     }
-    
+
     /* 4. 找跳跃点：直接用原始值判断过零 */
     for (int i = 0; i < HARD_STEPS; i++) {
         int32_t curr = sample_fwd[i];
         int32_t next = sample_fwd[i + 1];
-        if (curr > (ENC_RESOLUTION * 3 / 4) && next < (ENC_RESOLUTION / 4)) { // 从3/4圈跳到1/4圈
+        if (curr > (ENC_RESOLUTION * 3 / 4) && next < (ENC_RESOLUTION / 4)) {
             step_num++;
             rcd_x = i;
             rcd_y = (ENC_RESOLUTION - 1) - curr;
@@ -185,12 +185,12 @@ static void CheckData(void)
 //    int32_t sub;
 //    int32_t step_res = ENC_RESOLUTION / HARD_STEPS;
 //    char buf[128];
-//    
+//
 //    // 1. 平均
 //    for (int i = 0; i < HARD_STEPS + 1; i++) {
 //        sample_fwd[i] = CycleAvg(sample_fwd[i], sample_rev[i], ENC_RESOLUTION);
 //    }
-//    
+//
 //    // 2. 方向检查
 //    sub = CycleSub(sample_fwd[0], sample_fwd[HARD_STEPS - 1], ENC_RESOLUTION);
 //    if (sub == 0) {
@@ -199,7 +199,7 @@ static void CheckData(void)
 //        return;
 //    }
 //    go_dir = (sub > 0);
-//    
+//
 //    // 3. 连续性检查
 //    for (int i = 1; i < HARD_STEPS; i++) {
 //        sub = CycleSub(sample_fwd[i], sample_fwd[i-1], ENC_RESOLUTION);
@@ -229,7 +229,7 @@ static void CheckData(void)
 //            return;
 //        }
 //    }
-//    
+//
 //    // 4. 跳跃点检测（宽松版）
 //    uint32_t step_num = 0;
 //    for (int i = 0; i < HARD_STEPS; i++) {
@@ -241,7 +241,7 @@ static void CheckData(void)
 //            rcd_y = (ENC_RESOLUTION - 1) - curr;
 //        }
 //    }
-//    
+//
 //    if (step_num == 0) {
 //        // 如果没找到跳跃点，强制设一个
 //        step_num = 1;
@@ -253,7 +253,7 @@ static void CheckData(void)
 //        Uart_SendString("Error: Multiple jump points\r\n");
 //        return;
 //    }
-//    
+//
 //    cali_error = 0;
 //    Uart_SendString("CheckData PASS\r\n");
 //}
@@ -269,24 +269,24 @@ static void GenerateTable(void)
 {
     int32_t data;
     uint16_t val;
-    
+
     result_num = 0;
-    
+
     /* 擦除并开始写入Flash */
-    Stockpile_Flash_Data_Empty(&stockpile_quick_cali); // 擦除flash
-    Stockpile_Flash_Data_Begin(&stockpile_quick_cali); // 开始写入flash
-    
-    if (go_dir) { // 相对于编码器来说是正转方向的
+    Stockpile_Flash_Data_Empty(&stockpile_quick_cali);
+    Stockpile_Flash_Data_Begin(&stockpile_quick_cali);
+
+    if (go_dir) {
         /* 正转方向：线性插值生成校准表 */
         for (int x = rcd_x; x < rcd_x + HARD_STEPS + 1; x++) {
             /* 计算相邻两个采样点之间的角度差 */
-            data = CycleSub(sample_fwd[CycleMod(x+1, HARD_STEPS)], 
-                            sample_fwd[CycleMod(x, HARD_STEPS)], ENC_RESOLUTION); // 编码器的差值
-            
+            data = CycleSub(sample_fwd[CycleMod(x+1, HARD_STEPS)],
+                            sample_fwd[CycleMod(x, HARD_STEPS)], ENC_RESOLUTION);
+
             /* 确定插值范围 */
-            int start_y = (x == rcd_x) ? rcd_y + 1 : 0; // 处理开始值（+1使Flash[0]对应编码器0）
-            int end_y = (x == rcd_x + HARD_STEPS) ? rcd_y + 1 : data; // 处理结束值（+1将编码器16383放到表尾）
-            
+            int start_y = (x == rcd_x) ? rcd_y : 0;
+            int end_y = (x == rcd_x + HARD_STEPS) ? rcd_y : data;
+
             /* 在两点之间线性插值 */
             for (int y = start_y; y < end_y; y++) {
                 val = CycleMod(SOFT_DIVIDE * x + SOFT_DIVIDE * y / data, SUBDIVIDE_STEPS);
@@ -297,12 +297,12 @@ static void GenerateTable(void)
     } else {
         /* 反转方向：线性插值生成校准表 */
         for (int x = rcd_x + HARD_STEPS; x > rcd_x - 1; x--) {
-            data = CycleSub(sample_fwd[CycleMod(x, HARD_STEPS)], 
+            data = CycleSub(sample_fwd[CycleMod(x, HARD_STEPS)],
                             sample_fwd[CycleMod(x+1, HARD_STEPS)], ENC_RESOLUTION);
-            
-            int start_y = (x == rcd_x + HARD_STEPS) ? rcd_y + 1 : 0;
-            int end_y = (x == rcd_x) ? rcd_y + 1 : data;
-            
+
+            int start_y = (x == rcd_x + HARD_STEPS) ? rcd_y : 0;
+            int end_y = (x == rcd_x) ? rcd_y : data;
+
             for (int y = start_y; y < end_y; y++) {
                 val = CycleMod(SOFT_DIVIDE * (x+1) - SOFT_DIVIDE * y / data, SUBDIVIDE_STEPS);
                 Stockpile_Flash_Data_Write_Data16(&stockpile_quick_cali, &val, 1);
@@ -310,10 +310,10 @@ static void GenerateTable(void)
             }
         }
     }
-    
+
     Stockpile_Flash_Data_End(&stockpile_quick_cali);
 		printf("GenerateTable done, result_num=%lu, cali_table[0]=%u\r\n", result_num, cali_table[0]);
-    
+
     /* 检查生成的点数是否正确 */
     if (result_num == ENC_RESOLUTION) cali_is_calibrated = true;
     else cali_error = 4;
@@ -337,7 +337,7 @@ void EncoderCalibrator_Init(void)
 //    printf("cali_table[0]=%u (0x%04X)\r\n", first, first);
 //    if (first != 0xFFFF && first != 0) {
 //        cali_is_calibrated = true;
-//			MT6816_SetCalibrationData(cali_table); 
+//			MT6816_SetCalibrationData(cali_table);
 //    }
 //    printf("cali_init: calibrated=%d\r\n", cali_is_calibrated);
 }
@@ -363,29 +363,39 @@ void EncoderCalibrator_Trigger(void)
  * @details 执行校准状态机，控制电机运动并采集编码器数据
  * @note 必须在20kHz定时器中断中调用（每50μs一次）
  */
+/**
+ * @brief 编码器校准函数，每20kHz调用一次
+ * 该函数用于执行编码器的自动校准过程，包括正向和反向测量，并处理校准状态机
+ */
 void EncoderCalibrator_Tick20kHz(void)
 {
-    uint16_t raw;
+    uint16_t raw;  // 存储编码器原始角度值
+    // 更新MT6816编码器角度值
     MT6816_UpdateAngle();
+    // 校准状态机，根据不同状态执行不同操作
     switch (cali_state) {
         case 0: /* 空闲状态：等待触发 */
+            // 检测是否触发校准
             if (cali_triggered) {
+                // 设置电机电流矢量，移动到初始位置
                 TB67H450_SetFocCurrentVector(go_pos, 2000);
-                go_pos = SUBDIVIDE_STEPS;
-                sample_cnt = 0;
-                cali_state = 1;
+                go_pos = SUBDIVIDE_STEPS;  // 设置起始位置
+                sample_cnt = 0;  // 采样计数器清零
+                cali_state = 1;  // 切换到状态1
             }
             break;
-            
+
         case 1: /* 正向准备：移动到起始位置 */
+            // 以自动速度增加位置
             go_pos += AUTO_SPEED;
+            // 设置电机电流矢量
             TB67H450_SetFocCurrentVector(go_pos, 2000);
             if (go_pos == 2 * SUBDIVIDE_STEPS) {
                 go_pos = SUBDIVIDE_STEPS;
                 cali_state = 2;
             }
             break;
-            
+
         case 2: /* 正向测量：正转一圈，采集数据 */
             if ((go_pos % SOFT_DIVIDE) == 0) {
                 raw = MT6816_GetRawAngle();
@@ -405,15 +415,15 @@ void EncoderCalibrator_Tick20kHz(void)
                 cali_state = 3;
             }
             break;
-            
+
         case 3: /* 反向返回：返回起点附近 */
             go_pos += FINE_SPEED;
             TB67H450_SetFocCurrentVector(go_pos, 2000);
-            if (go_pos == 2 * SUBDIVIDE_STEPS + SOFT_DIVIDE * 20) { 
+            if (go_pos == 2 * SUBDIVIDE_STEPS + SOFT_DIVIDE * 20) {
                 cali_state = 4;
             }
             break;
-            
+
         case 4: /* 消除间隙：反向移动消除齿轮间隙 */
             go_pos -= FINE_SPEED;
             TB67H450_SetFocCurrentVector(go_pos, 2000);
@@ -421,7 +431,7 @@ void EncoderCalibrator_Tick20kHz(void)
                 cali_state = 5;
             }
             break;
-            
+
         case 5: /* 反向测量：反转一圈，采集数据 */
             if ((go_pos % SOFT_DIVIDE) == 0) {
                 raw = MT6816_GetRawAngle();
@@ -441,7 +451,7 @@ void EncoderCalibrator_Tick20kHz(void)
                 cali_state = 6;
             }
             break;
-            
+
         case 6: /* 计算状态：停止电机输出 */
             TB67H450_SetFocCurrentVector(0, 0);
             break;
@@ -467,7 +477,7 @@ void EncoderCalibrator_TickMainLoop(void)
     /* 重置状态 */
     cali_state = 0;
     cali_triggered = false;
-    
+
     /* 校准成功，系统复位 */
     if (cali_error == 0) {
 			    uint16_t *p = (uint16_t *)STOCKPILE_APP_CALI_ADDR;

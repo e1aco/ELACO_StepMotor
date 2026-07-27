@@ -1,32 +1,39 @@
-#ifndef _ELA_MT6816_H_
-#define _ELA_MT6816_H_
+/********
+ * @ 文件: ela_mt6816.h
+ * @ 作者: ELACO
+ * @ 日期: 2026-07-17
+ * @ 版本: 1.0.0
+ * @ 说明: MT6816 磁编码器驱动头文件，提供角度读取接口
+ ********/
 
-#include "main.h"
+#ifndef ELA_MT6816_H
+#define ELA_MT6816_H
+
 #include <stdbool.h>
+#include "ela_mt6816_drv.h"
 
-/* 角度获取结构体 */
+/********
+ * @ 说明: 角度获取结构体
+ ********/
 typedef struct MT6816_ANGLE
 {
-    unsigned short raw_data;    // 原始数据 16位，包含14位角度数据、1位无磁场标志和1位奇偶校验位（一般用不上）
-    unsigned short raw_angle;   // 解析后的角度值 (0 ~ 16383)
-    unsigned int micro_angle;   // 角度值 (0 ~ 51200),每一个编码器值对应的微步的值。
-    bool data_valid;            // 传感器数据有效标志，true表示数据正确，false表示数据错误（如校验失败）
-    bool magnet_valid;          // 磁铁有效标志，true表示磁铁存在，false表示磁铁不存在
-    bool direciton;             // 方向标志，0表示正向，1表示反向（所以默认是正向）
-}MT6816_ANGLE_T;
+    unsigned short raw_data;    /* 原始16位数据 */
+    unsigned short raw_angle;   /* 解析后角度值 (0 ~ 16383) */
+    unsigned int micro_angle;   /* 微步角度值 (0 ~ 51200) */
+    bool data_valid;            /* 数据有效标志 */
+    bool magnet_valid;          /* 磁铁有效标志 */
+    bool direction;             /* 方向标志，0正向，1反向 */
+} MT6816_ANGLE_T;
 
-extern MT6816_ANGLE_T g_mt6816_st; // 角度获取结构体
+extern MT6816_ANGLE_T g_mt6816_st;
 
 /* 读取命令值 */
-#define MT6816_CMD_ANGLE      0x03  /* 读取角度 */
-#define MT6816_CMD_RAW_ANGLE  0x04  /* 读取原始角度 */
-
-/* SPI片选引脚电平转换 */
-#define MT6816_CS_HIGH()    HAL_GPIO_WritePin(SPI_CS_GPIO_Port, SPI_CS_Pin, GPIO_PIN_SET)
-#define MT6816_CS_LOW()     HAL_GPIO_WritePin(SPI_CS_GPIO_Port, SPI_CS_Pin, GPIO_PIN_RESET)
+#define MT6816_CMD_ANGLE      0x03
+#define MT6816_CMD_RAW_ANGLE  0x04
+#define MT6816_CMD_READ_BIT   0x80
 
 /* 函数声明 */
-void MT6816_Init(void);
-void MT6816_GetAngle(void);
+void ela_mt6816_get_angle(void);
 
 #endif
+

@@ -1,0 +1,13 @@
+{
+  "_comment": "EM-SKILL 项目元数据；init/si 时自动生成，rec/new 时读取",
+  "type": "embedded",
+  "name": "ELA_StepMotor",
+  "created": "2026-07-21",
+  "embedded": {
+    "chip": "STM32F103RET6",
+    "toolchain": "keil",
+    "interface": "stlink"
+  },
+  "plugins": ["embedded"],
+  "project_file": "MDK-ARM/ELA_StepMotor.uvprojx"
+}

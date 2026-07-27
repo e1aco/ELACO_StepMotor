@@ -1,10 +1,10 @@
 ela_stepmotor\mbrtu.o: ..\FreeModbus\modbus\mbrtu.c
-ela_stepmotor\mbrtu.o: D:\keil5\ARM\ARM_Compiler_5.06u7\Bin\..\include\stdlib.h
-ela_stepmotor\mbrtu.o: D:\keil5\ARM\ARM_Compiler_5.06u7\Bin\..\include\string.h
+ela_stepmotor\mbrtu.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdlib.h
+ela_stepmotor\mbrtu.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\string.h
 ela_stepmotor\mbrtu.o: ..\FreeModbus\modbus\port.h
-ela_stepmotor\mbrtu.o: D:\keil5\ARM\ARM_Compiler_5.06u7\Bin\..\include\assert.h
-ela_stepmotor\mbrtu.o: D:\keil5\ARM\ARM_Compiler_5.06u7\Bin\..\include\inttypes.h
-ela_stepmotor\mbrtu.o: D:\keil5\ARM\ARM_Compiler_5.06u7\Bin\..\include\stdint.h
+ela_stepmotor\mbrtu.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\assert.h
+ela_stepmotor\mbrtu.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\inttypes.h
+ela_stepmotor\mbrtu.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdint.h
 ela_stepmotor\mbrtu.o: ..\FreeModbus\modbus\mb.h
 ela_stepmotor\mbrtu.o: ..\FreeModbus\modbus\mbport.h
 ela_stepmotor\mbrtu.o: ..\FreeModbus\modbus\mbproto.h

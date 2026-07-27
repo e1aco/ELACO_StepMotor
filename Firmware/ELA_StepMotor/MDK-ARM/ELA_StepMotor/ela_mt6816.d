@@ -1,5 +1,8 @@
 ela_stepmotor\ela_mt6816.o: ..\ELA_LIB\ela_mt6816.c
 ela_stepmotor\ela_mt6816.o: ..\ELA_LIB\ela_mt6816.h
+ela_stepmotor\ela_mt6816.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdbool.h
+ela_stepmotor\ela_mt6816.o: ..\ELA_LIB\ela_mt6816_drv.h
+ela_stepmotor\ela_mt6816.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdint.h
 ela_stepmotor\ela_mt6816.o: ../Core/Inc/main.h
 ela_stepmotor\ela_mt6816.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h
 ela_stepmotor\ela_mt6816.o: ../Core/Inc/stm32f1xx_hal_conf.h
@@ -8,14 +11,13 @@ ela_stepmotor\ela_mt6816.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_de
 ela_stepmotor\ela_mt6816.o: ../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f1xx.h
 ela_stepmotor\ela_mt6816.o: ../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f103xe.h
 ela_stepmotor\ela_mt6816.o: ../Drivers/CMSIS/Include/core_cm3.h
-ela_stepmotor\ela_mt6816.o: D:\keil5\ARM\ARM_Compiler_5.06u7\Bin\..\include\stdint.h
 ela_stepmotor\ela_mt6816.o: ../Drivers/CMSIS/Include/cmsis_version.h
 ela_stepmotor\ela_mt6816.o: ../Drivers/CMSIS/Include/cmsis_compiler.h
 ela_stepmotor\ela_mt6816.o: ../Drivers/CMSIS/Include/cmsis_armcc.h
 ela_stepmotor\ela_mt6816.o: ../Drivers/CMSIS/Device/ST/STM32F1xx/Include/system_stm32f1xx.h
 ela_stepmotor\ela_mt6816.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h
 ela_stepmotor\ela_mt6816.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h
-ela_stepmotor\ela_mt6816.o: D:\keil5\ARM\ARM_Compiler_5.06u7\Bin\..\include\stddef.h
+ela_stepmotor\ela_mt6816.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stddef.h
 ela_stepmotor\ela_mt6816.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc_ex.h
 ela_stepmotor\ela_mt6816.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio.h
 ela_stepmotor\ela_mt6816.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio_ex.h
@@ -33,5 +35,4 @@ ela_stepmotor\ela_mt6816.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_sp
 ela_stepmotor\ela_mt6816.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h
 ela_stepmotor\ela_mt6816.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h
 ela_stepmotor\ela_mt6816.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h
-ela_stepmotor\ela_mt6816.o: D:\keil5\ARM\ARM_Compiler_5.06u7\Bin\..\include\stdbool.h
 ela_stepmotor\ela_mt6816.o: ../Core/Inc/spi.h

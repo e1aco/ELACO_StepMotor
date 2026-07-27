@@ -1,9 +1,9 @@
 stepmotorctrl_42\motion_planner.o: ..\User\Motor\motion_planner.c
 stepmotorctrl_42\motion_planner.o: ..\User\Motor\motion_planner.h
-stepmotorctrl_42\motion_planner.o: D:\keil5\ARM\ARM_Compiler_5.06u7\Bin\..\include\stdint.h
-stepmotorctrl_42\motion_planner.o: D:\keil5\ARM\ARM_Compiler_5.06u7\Bin\..\include\stdbool.h
-stepmotorctrl_42\motion_planner.o: D:\keil5\ARM\ARM_Compiler_5.06u7\Bin\..\include\stdlib.h
-stepmotorctrl_42\motion_planner.o: D:\keil5\ARM\ARM_Compiler_5.06u7\Bin\..\include\stdio.h
+stepmotorctrl_42\motion_planner.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdint.h
+stepmotorctrl_42\motion_planner.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdbool.h
+stepmotorctrl_42\motion_planner.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdlib.h
+stepmotorctrl_42\motion_planner.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdio.h
 stepmotorctrl_42\motion_planner.o: ../Core/Inc/usart.h
 stepmotorctrl_42\motion_planner.o: ../Core/Inc/main.h
 stepmotorctrl_42\motion_planner.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h
@@ -19,7 +19,7 @@ stepmotorctrl_42\motion_planner.o: ../Drivers/CMSIS/Include/cmsis_armcc.h
 stepmotorctrl_42\motion_planner.o: ../Drivers/CMSIS/Device/ST/STM32F1xx/Include/system_stm32f1xx.h
 stepmotorctrl_42\motion_planner.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h
 stepmotorctrl_42\motion_planner.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h
-stepmotorctrl_42\motion_planner.o: D:\keil5\ARM\ARM_Compiler_5.06u7\Bin\..\include\stddef.h
+stepmotorctrl_42\motion_planner.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stddef.h
 stepmotorctrl_42\motion_planner.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc_ex.h
 stepmotorctrl_42\motion_planner.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio.h
 stepmotorctrl_42\motion_planner.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio_ex.h
@@ -37,4 +37,4 @@ stepmotorctrl_42\motion_planner.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx
 stepmotorctrl_42\motion_planner.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h
 stepmotorctrl_42\motion_planner.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h
 stepmotorctrl_42\motion_planner.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h
-stepmotorctrl_42\motion_planner.o: D:\keil5\ARM\ARM_Compiler_5.06u7\Bin\..\include\string.h
+stepmotorctrl_42\motion_planner.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\string.h

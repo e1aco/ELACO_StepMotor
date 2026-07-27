@@ -1,20 +1,31 @@
+/********
+ * @ 文件: test_mt6816.c
+ * @ 作者: ELACO
+ * @ 日期: 2026-07-17
+ * @ 版本: 1.0.0
+ * @ 说明: MT6816 编码器测试，循环读取角度并打印
+ ********/
+
 #include "test_mt6816.h"
 #include "ela_mt6816.h"
+#include "ela_mt6816_drv.h"
 #include "ela_uart.h"
 
+/********
+ * @ 说明: MT6816 编码器测试函数，初始化后循环读取
+ *         并打印角度
+ ********/
 void test_mt6816(void)
 {
-	MT6816_Init();
-	Uart_PrintfInit();
-	while (1)
-	{
-		MT6816_GetAngle();
-		HAL_Delay(100);
-		printf("raw_angle:%d,\
-				data_valid:%d,\
-				magnet_valid:%d",
-			   g_mt6816_st.raw_angle,
-			   g_mt6816_st.data_valid,
-			   g_mt6816_st.magnet_valid);
-	}
+    ela_mt6816_drv_init();
+    while (1)
+    {
+        ela_mt6816_get_angle();
+        HAL_Delay(200);
+        printf("raw:0x%04X ang:%d v:%d m:%d\r\n",
+               g_mt6816_st.raw_data,
+               g_mt6816_st.raw_angle,
+               g_mt6816_st.data_valid,
+               g_mt6816_st.magnet_valid);
+    }
 }

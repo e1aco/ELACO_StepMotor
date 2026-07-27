@@ -10,14 +10,14 @@
       <TargetName>ELA_StepMotor</TargetName>
       <ToolsetNumber>0x4</ToolsetNumber>
       <ToolsetName>ARM-ADS</ToolsetName>
-      <pCCUsed>5060960::V5.06 update 7 (build 960)::.\ARM_Compiler_5.06u7</pCCUsed>
+      <pCCUsed>5060960::V5.06 update 7 (build 960)::.\ARMCC</pCCUsed>
       <uAC6>0</uAC6>
       <TargetOption>
         <TargetCommonOption>
           <Device>STM32F103RE</Device>
           <Vendor>STMicroelectronics</Vendor>
-          <PackID>Keil.STM32F1xx_DFP.2.4.1</PackID>
-          <PackURL>https://www.keil.com/pack/</PackURL>
+          <PackID>Keil.STM32F1xx_DFP.2.2.0</PackID>
+          <PackURL>http://www.keil.com/pack/</PackURL>
           <Cpu>IRAM(0x20000000-0x2000FFFF) IROM(0x8000000-0x807FFFF)  CLOCK(8000000) CPUTYPE("Cortex-M3") TZ</Cpu>
           <FlashUtilSpec></FlashUtilSpec>
           <StartupFile></StartupFile>
@@ -570,6 +570,16 @@
               <FilePath>..\ELA_LIB\ela_mt6816.c</FilePath>
             </File>
             <File>
+              <FileName>ela_tb67h450.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\ELA_LIB\ela_tb67h450.c</FilePath>
+            </File>
+            <File>
+              <FileName>ela_sinform.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\ELA_LIB\ela_sinform.c</FilePath>
+            </File>
+            <File>
               <FileName>ela_uart.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\ELA_LIB\ela_uart.c</FilePath>
@@ -583,6 +593,21 @@
               <FileName>ela_uart_queue.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\ELA_LIB\ela_uart_queue.c</FilePath>
+            </File>
+            <File>
+              <FileName>ela_uart_drv.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\ELA_LIB\ela_uart_drv.c</FilePath>
+            </File>
+            <File>
+              <FileName>ela_tb67h450_drv.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\ELA_LIB\ela_tb67h450_drv.c</FilePath>
+            </File>
+            <File>
+              <FileName>ela_mt6816_drv.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\ELA_LIB\ela_mt6816_drv.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -678,6 +703,11 @@
               <FileName>test_mt6816.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\ModTest\test_mt6816.c</FilePath>
+            </File>
+            <File>
+              <FileName>test_tb67h450.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\ModTest\test_tb67h450.c</FilePath>
             </File>
           </Files>
         </Group>

@@ -10,12 +10,12 @@
 
 /* ==================== 配置 ==================== */
 typedef struct {
-    int32_t encoderHomeOffset;  // 编码器零位偏移量
-    int32_t caliCurrent; // 校准电流
-    int32_t ratedCurrent; // 额定电流
-    int32_t ratedVelocity; // 额定速度
-    int32_t ratedVelocityAcc; // 速度变化加速度
-    int32_t ratedCurrentAcc; // 电流变化加速度
+    int32_t encoderHomeOffset;
+    int32_t caliCurrent;
+    int32_t ratedCurrent;
+    int32_t ratedVelocity;
+    int32_t ratedVelocityAcc;
+    int32_t ratedCurrentAcc;
 } MotionPlanner_Config_t;
 
 /* 全局配置指针（需要在c文件中赋值）*/

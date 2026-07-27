@@ -1,7 +1,7 @@
 stepmotorctrl_42\button.o: ..\User\BUTTON\button.c
 stepmotorctrl_42\button.o: ..\User\BUTTON\button.h
-stepmotorctrl_42\button.o: D:\keil5\ARM\ARM_Compiler_5.06u7\Bin\..\include\stdint.h
-stepmotorctrl_42\button.o: D:\keil5\ARM\ARM_Compiler_5.06u7\Bin\..\include\stdbool.h
+stepmotorctrl_42\button.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdint.h
+stepmotorctrl_42\button.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdbool.h
 stepmotorctrl_42\button.o: ../Core/Inc/main.h
 stepmotorctrl_42\button.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h
 stepmotorctrl_42\button.o: ../Core/Inc/stm32f1xx_hal_conf.h
@@ -16,7 +16,7 @@ stepmotorctrl_42\button.o: ../Drivers/CMSIS/Include/cmsis_armcc.h
 stepmotorctrl_42\button.o: ../Drivers/CMSIS/Device/ST/STM32F1xx/Include/system_stm32f1xx.h
 stepmotorctrl_42\button.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h
 stepmotorctrl_42\button.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h
-stepmotorctrl_42\button.o: D:\keil5\ARM\ARM_Compiler_5.06u7\Bin\..\include\stddef.h
+stepmotorctrl_42\button.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stddef.h
 stepmotorctrl_42\button.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc_ex.h
 stepmotorctrl_42\button.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio.h
 stepmotorctrl_42\button.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio_ex.h

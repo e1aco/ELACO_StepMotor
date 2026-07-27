@@ -1,8 +1,8 @@
 ela_stepmotor\portserial.o: ..\FreeModbus\modbus\portserial.c
 ela_stepmotor\portserial.o: ..\FreeModbus\modbus\port.h
-ela_stepmotor\portserial.o: D:\keil5\ARM\ARM_Compiler_5.06u7\Bin\..\include\assert.h
-ela_stepmotor\portserial.o: D:\keil5\ARM\ARM_Compiler_5.06u7\Bin\..\include\inttypes.h
-ela_stepmotor\portserial.o: D:\keil5\ARM\ARM_Compiler_5.06u7\Bin\..\include\stdint.h
+ela_stepmotor\portserial.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\assert.h
+ela_stepmotor\portserial.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\inttypes.h
+ela_stepmotor\portserial.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdint.h
 ela_stepmotor\portserial.o: ../Core/Inc/usart.h
 ela_stepmotor\portserial.o: ../Core/Inc/main.h
 ela_stepmotor\portserial.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h
@@ -18,7 +18,7 @@ ela_stepmotor\portserial.o: ../Drivers/CMSIS/Include/cmsis_armcc.h
 ela_stepmotor\portserial.o: ../Drivers/CMSIS/Device/ST/STM32F1xx/Include/system_stm32f1xx.h
 ela_stepmotor\portserial.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h
 ela_stepmotor\portserial.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h
-ela_stepmotor\portserial.o: D:\keil5\ARM\ARM_Compiler_5.06u7\Bin\..\include\stddef.h
+ela_stepmotor\portserial.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stddef.h
 ela_stepmotor\portserial.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc_ex.h
 ela_stepmotor\portserial.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio.h
 ela_stepmotor\portserial.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio_ex.h

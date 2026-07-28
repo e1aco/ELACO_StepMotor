@@ -1,30 +1,37 @@
-# state.md — 项目当前状态（rec 默认只读这个）
+# ELA_StepMotor 项目状态
 
-> 目标：<=50 行，让 `/ela rec` 只加载这一个文件就能恢复项目上下文。
+## 项目
+ELACO 步进电机驱动器固件 — STM32F103RET6 + 双 TB67H450FNG H桥 + MT6816 编码器
 
-## Meta
-- **项目**: ELA_StepMotor
-- **类型**: embedded
-- **当前步骤**: 初始化完成 + 代码格式修复
-- **更新时间**: 2026-07-26
-- **会话**: 无
+## 已完成模块 (A~E 分级)
+| 模块 | 分级 | 状态 |
+|------|------|------|
+| ela_uart (drv+usr) | drv | ✅ |
+| ela_uart_queue | drv | ✅ |
+| ela_can_queue | drv | ✅ |
+| ela_mt6816 (drv+usr) | drv | ✅ |
+| ela_tb67h450 (drv+usr) | drv | ✅ |
+| ela_button (drv+usr) | drv | ✅ |
+| ela_stockfile (drv+usr) | drv | ✅ |
+| ela_cyclecal | drv | ✅ |
+| elaco_calibration_usr | drv | ✅ |
 
-## 下一步动作
-1. `/ela new <描述>` 开始新功能开发
-2. `/ela verify s<N>` 验证已完成步骤
+## 通信协议
+- CAN — 已配置 166kbps，队列缓冲已实现
+- Modbus RTU/ASCII — FreeModbus 集成，USART1 RS-485
+- USART3 — DMA 调试口，printf 重定向
 
-## 最近 3 条关键决策
-- [2026-07-26] 项目初始化，类型为 embedded (STM32F103RET6 + Keil + CubeMX)
-- [2026-07-26] 代码格式修复：修复 ela_can_queue.h TRUE/FALSE 宏定义 + 全部文件末尾添加空行
+## 测试
+- ModTest 模式：test_mt6816 / test_tb67h450 / test_position
 
-## 阻塞项 / 待办
-- [ ] 无
+## 进行中
+- 位置闭环控制（test_position 测试中）
+- 校准表生成（elaco_calibration）
 
-## 详细资料指针
-| 内容 | 文件 |
-|------|------|
-| 步骤全表 | `project-spec.md` |
-| 会话历史 | `sessions/<id>.md` |
-| 决策全集 | `decisions.md` |
-| 问题追踪 | `problem-log.md` |
-| HVR 记录 | `checkpoints/` |
+## 已知问题
+- FreeModbus USART1 IRQHandler 命名冲突
+- HSI 8MHz 开发中，生产需切 HSE 72MHz（所有定时器重算）
+- 485 DE/RE 引脚控制未实现
+
+## 下一步
+- ela_cyclecal 精度验证 → 位置闭环调参 → 生产时钟切换

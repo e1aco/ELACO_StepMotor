@@ -16,6 +16,11 @@
 #include "stm32f1xx_hal.h"
 #include "main.h"
 
+#include "ela_cyclecal.h"
+#include "ela_stockfile_usr.h"
+#include "ela_stockfile_drv.h"
+#include "elaco_calibration_usr.h"
+
 void elaco_main(void);
 
 #define ModTest

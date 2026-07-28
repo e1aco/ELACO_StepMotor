@@ -430,14 +430,14 @@
               <FilePath>../Core/Src/tim.c</FilePath>
             </File>
             <File>
-              <FileName>usart.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>../Core/Src/usart.c</FilePath>
-            </File>
-            <File>
               <FileName>stm32f1xx_it.c</FileName>
               <FileType>1</FileType>
               <FilePath>../Core/Src/stm32f1xx_it.c</FilePath>
+            </File>
+            <File>
+              <FileName>usart.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>../Core/Src/usart.c</FilePath>
             </File>
             <File>
               <FileName>stm32f1xx_hal_msp.c</FileName>
@@ -565,24 +565,19 @@
               <FilePath>..\ELA_LIB\elaco_main.h</FilePath>
             </File>
             <File>
-              <FileName>ela_mt6816.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\ELA_LIB\ela_mt6816.c</FilePath>
-            </File>
-            <File>
-              <FileName>ela_tb67h450.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\ELA_LIB\ela_tb67h450.c</FilePath>
-            </File>
-            <File>
               <FileName>ela_sinform.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\ELA_LIB\ela_sinform.c</FilePath>
             </File>
             <File>
-              <FileName>ela_uart.c</FileName>
+              <FileName>ela_uart_usr.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\ELA_LIB\ela_uart.c</FilePath>
+              <FilePath>..\ELA_LIB\ela_uart_usr.c</FilePath>
+            </File>
+            <File>
+              <FileName>ela_uart_drv.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\ELA_LIB\ela_uart_drv.c</FilePath>
             </File>
             <File>
               <FileName>ela_can_queue.c</FileName>
@@ -595,19 +590,54 @@
               <FilePath>..\ELA_LIB\ela_uart_queue.c</FilePath>
             </File>
             <File>
-              <FileName>ela_uart_drv.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\ELA_LIB\ela_uart_drv.c</FilePath>
-            </File>
-            <File>
               <FileName>ela_tb67h450_drv.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\ELA_LIB\ela_tb67h450_drv.c</FilePath>
             </File>
             <File>
+              <FileName>ela_tb67h450_usr.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\ELA_LIB\ela_tb67h450_usr.c</FilePath>
+            </File>
+            <File>
               <FileName>ela_mt6816_drv.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\ELA_LIB\ela_mt6816_drv.c</FilePath>
+            </File>
+            <File>
+              <FileName>ela_mt6816_usr.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\ELA_LIB\ela_mt6816_usr.c</FilePath>
+            </File>
+            <File>
+              <FileName>ela_cyclecal.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\ELA_LIB\ela_cyclecal.c</FilePath>
+            </File>
+            <File>
+              <FileName>ela_stockfile_drv.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\ELA_LIB\ela_stockfile_drv.c</FilePath>
+            </File>
+            <File>
+              <FileName>ela_stockfile_usr.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\ELA_LIB\ela_stockfile_usr.c</FilePath>
+            </File>
+            <File>
+              <FileName>elaco_calibration_usr.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\ELA_LIB\elaco_calibration_usr.c</FilePath>
+            </File>
+            <File>
+              <FileName>ela_button_drv.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\ELA_LIB\ela_button_drv.c</FilePath>
+            </File>
+            <File>
+              <FileName>ela_button_usr.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\ELA_LIB\ela_button_usr.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -708,6 +738,11 @@
               <FileName>test_tb67h450.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\ModTest\test_tb67h450.c</FilePath>
+            </File>
+            <File>
+              <FileName>test_position.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\ModTest\test_position.c</FilePath>
             </File>
           </Files>
         </Group>

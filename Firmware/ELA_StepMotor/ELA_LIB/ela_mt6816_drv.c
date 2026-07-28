@@ -1,13 +1,12 @@
-/********
+﻿/********
  * @ 文件: ela_mt6816_drv.c
  * @ 作者: ELACO
  * @ 日期: 2026-07-23
  * @ 版本: 1.0.0
- * @ 说明: MT6816 磁编码器硬件驱动层，SPI 原语
+ * @ 说明: MT6816 磁编码器硬件驱动层，SPI 收发原语
  ********/
 
 #include "ela_mt6816_drv.h"
-#include "ela_mt6816.h"
 #include "spi.h"
 
 /* mt6816 drv start */
@@ -41,4 +40,4 @@ void ela_mt6816_drv_init(void)
 }
 
 /* mt6816 drv end */
-
+

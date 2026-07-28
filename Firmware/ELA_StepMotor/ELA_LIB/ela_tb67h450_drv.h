@@ -1,9 +1,9 @@
-/********
+﻿/********
  * @ 文件: ela_tb67h450_drv.h
  * @ 作者: ELACO
  * @ 日期: 2026-07-23
  * @ 版本: 1.0.0
- * @ 说明: TB67H450 步进电机硬件驱动层，GPIO/PWM 原语
+ * @ 说明: TB67H450 电机驱动硬件层，PWM 与方向引脚原语
  ********/
 
 #ifndef ELA_TB67H450_DRV_H
@@ -11,28 +11,19 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include "main.h"
 
-/* 电机驱动引脚控制宏 */
-#define AP_HIGH() \
-    HAL_GPIO_WritePin(AP_GPIO_Port, AP_Pin, GPIO_PIN_SET)
-#define AP_LOW() \
-    HAL_GPIO_WritePin(AP_GPIO_Port, AP_Pin, GPIO_PIN_RESET)
-#define AM_HIGH() \
-    HAL_GPIO_WritePin(AM_GPIO_Port, AM_Pin, GPIO_PIN_SET)
-#define AM_LOW() \
-    HAL_GPIO_WritePin(AM_GPIO_Port, AM_Pin, GPIO_PIN_RESET)
-#define BP_HIGH() \
-    HAL_GPIO_WritePin(BP_GPIO_Port, BP_Pin, GPIO_PIN_SET)
-#define BP_LOW() \
-    HAL_GPIO_WritePin(BP_GPIO_Port, BP_Pin, GPIO_PIN_RESET)
-#define BM_HIGH() \
-    HAL_GPIO_WritePin(BM_GPIO_Port, BM_Pin, GPIO_PIN_SET)
-#define BM_LOW() \
-    HAL_GPIO_WritePin(BM_GPIO_Port, BM_Pin, GPIO_PIN_RESET)
-#define EN_HIGH() \
-    HAL_GPIO_WritePin(EN_GPIO_Port, EN_Pin, GPIO_PIN_SET)
-#define EN_LOW() \
-    HAL_GPIO_WritePin(EN_GPIO_Port, EN_Pin, GPIO_PIN_RESET)
+/* A 相方向引脚 */
+#define AP_HIGH() HAL_GPIO_WritePin(AP_GPIO_Port, AP_Pin, GPIO_PIN_SET)
+#define AP_LOW()  HAL_GPIO_WritePin(AP_GPIO_Port, AP_Pin, GPIO_PIN_RESET)
+#define AM_HIGH() HAL_GPIO_WritePin(AM_GPIO_Port, AM_Pin, GPIO_PIN_SET)
+#define AM_LOW()  HAL_GPIO_WritePin(AM_GPIO_Port, AM_Pin, GPIO_PIN_RESET)
+
+/* B 相方向引脚 */
+#define BP_HIGH() HAL_GPIO_WritePin(BP_GPIO_Port, BP_Pin, GPIO_PIN_SET)
+#define BP_LOW()  HAL_GPIO_WritePin(BP_GPIO_Port, BP_Pin, GPIO_PIN_RESET)
+#define BM_HIGH() HAL_GPIO_WritePin(BM_GPIO_Port, BM_Pin, GPIO_PIN_SET)
+#define BM_LOW()  HAL_GPIO_WritePin(BM_GPIO_Port, BM_Pin, GPIO_PIN_RESET)
 
 /********
  * @ 输入: current_a: A 相 PWM 占空比
@@ -56,5 +47,11 @@ void tb67h450_drv_set_dire_a(bool status_ap, bool status_am);
  ********/
 void tb67h450_drv_set_dire_b(bool status_bp, bool status_bm);
 
-#endif
+/********
+ * @ 输入: step: 步进电机驱动步序值 (0-3)
+ * @ 说明: 单相励磁驱动一步
+ ********/
+void tb67h450_drv_drive_step(unsigned char step);
 
+#endif
+

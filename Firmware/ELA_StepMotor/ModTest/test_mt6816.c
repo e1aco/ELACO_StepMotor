@@ -7,9 +7,9 @@
  ********/
 
 #include "test_mt6816.h"
-#include "ela_mt6816.h"
+#include "ela_mt6816_usr.h"
 #include "ela_mt6816_drv.h"
-#include "ela_uart.h"
+#include "ela_uart_usr.h"
 
 /********
  * @ 说明: MT6816 编码器测试函数，初始化后循环读取
@@ -17,10 +17,10 @@
  ********/
 void test_mt6816(void)
 {
-    ela_mt6816_drv_init();
+    ela_mt6816_usr_init();
     while (1)
     {
-        ela_mt6816_get_angle();
+        ela_mt6816_usr_read_angle();
         HAL_Delay(200);
         printf("raw:0x%04X ang:%d v:%d m:%d\r\n",
                g_mt6816_st.raw_data,

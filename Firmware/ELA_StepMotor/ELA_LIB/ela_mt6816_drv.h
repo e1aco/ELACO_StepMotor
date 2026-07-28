@@ -1,4 +1,4 @@
-/********
+﻿/********
  * @ 文件: ela_mt6816_drv.h
  * @ 作者: ELACO
  * @ 日期: 2026-07-23
@@ -12,7 +12,7 @@
 #include <stdint.h>
 #include "main.h"
 
-/* SPI片选引脚电平转换 */
+/* SPI 片选引脚电平转换 */
 #define MT6816_CS_HIGH() \
     HAL_GPIO_WritePin(SPI_CS_GPIO_Port, SPI_CS_Pin, \
                       GPIO_PIN_SET)
@@ -34,4 +34,4 @@ uint16_t mt6816_drv_spi_transfer(uint16_t data_tx);
 void ela_mt6816_drv_init(void);
 
 #endif
-
+

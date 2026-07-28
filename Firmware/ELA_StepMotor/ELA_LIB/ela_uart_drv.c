@@ -7,7 +7,7 @@
  ********/
 
 #include "ela_uart_drv.h"
-#include "ela_uart.h"
+#include "ela_uart_usr.h"
 
 /* uart drv start */
 

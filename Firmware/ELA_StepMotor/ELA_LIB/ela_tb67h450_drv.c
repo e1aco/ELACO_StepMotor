@@ -1,9 +1,9 @@
-/********
+﻿/********
  * @ 文件: ela_tb67h450_drv.c
  * @ 作者: ELACO
  * @ 日期: 2026-07-23
  * @ 版本: 1.0.0
- * @ 说明: TB67H450 步进电机硬件驱动层，GPIO/PWM 原语
+ * @ 说明: TB67H450 电机驱动硬件层，PWM 与方向引脚原语
  ********/
 
 #include "ela_tb67h450_drv.h"
@@ -77,5 +77,34 @@ void tb67h450_drv_set_dire_b(bool status_bp, bool status_bm)
     }
 }
 
-/* tb67h450 drv end */
+/********
+ * @ 输入: step: 步进电机驱动步序值 (0-3)
+ * @ 说明: 单相励磁驱动一步
+ ********/
+void tb67h450_drv_drive_step(unsigned char step)
+{
+    switch (step)
+    {
+        case 0:
+            tb67h450_drv_set_dire_a(1, 0);
+            tb67h450_drv_set_dire_b(0, 0);
+            break;
+        case 1:
+            tb67h450_drv_set_dire_a(0, 0);
+            tb67h450_drv_set_dire_b(1, 0);
+            break;
+        case 2:
+            tb67h450_drv_set_dire_a(0, 1);
+            tb67h450_drv_set_dire_b(0, 0);
+            break;
+        case 3:
+            tb67h450_drv_set_dire_a(0, 0);
+            tb67h450_drv_set_dire_b(0, 1);
+            break;
+        default:
+            break;
+    }
+}
 
+/* tb67h450 drv end */
+

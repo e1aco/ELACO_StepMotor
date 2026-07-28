@@ -62,6 +62,7 @@ version: 1.0.0
 | `/ela build` | 编译（自动检测 Keil/CMake/GCC） | 嵌入式项目 |
 | `/ela flash` | OpenOCD 烧录 | 嵌入式项目 |
 | `/ela serial` | 串口监控（CLI/MCP） | 嵌入式项目 |
+| `/ela keil-config` | Keil .uvprojx 同步（新增 .c 文件后必须执行） | 嵌入式项目 |
 | `/ela initem` | 嵌入式工具初始化（路径注册） | 嵌入式项目 |
 | `/ela learn [teach\|kb\|status]` | 交互式教学 + 知识库 | 学习模式 |
 

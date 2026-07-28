@@ -1,11 +1,10 @@
 {
-  "type": "embedded",
   "name": "ELA_StepMotor",
-  "created": "2026-07-26",
-  "embedded": {
-    "chip": "STM32F103RET6",
-    "toolchain": "Keil MDK-ARM",
-    "interface": "CubeMX"
-  },
-  "plugins": []
+  "type": "embedded",
+  "mcu": "STM32F103RET6",
+  "ide": "Keil MDK-ARM v5",
+  "cube_version": "STM32CubeMX",
+  "created": "2026-07-28",
+  "compiler": "ARM Compiler 5/6",
+  "clock": "HSI 8MHz (dev) / HSE 12MHz x6 PLL 72MHz (prod)"
 }

@@ -1,0 +1,14 @@
+.gitnexus/
+
+Firmware/ELA_StepMotor/MDK-ARM/ELA_StepMotor/*.o
+Firmware/ELA_StepMotor/MDK-ARM/ELA_StepMotor/*.axf
+Firmware/ELA_StepMotor/MDK-ARM/ELA_StepMotor/*.hex
+Firmware/ELA_StepMotor/MDK-ARM/ELA_StepMotor/*.crf
+Firmware/ELA_StepMotor/MDK-ARM/ELA_StepMotor/*.d
+Firmware/ELA_StepMotor/MDK-ARM/ELA_StepMotor/*.dep
+Firmware/ELA_StepMotor/MDK-ARM/ELA_StepMotor/*.htm
+Firmware/ELA_StepMotor/MDK-ARM/ELA_StepMotor/*.map
+Firmware/ELA_StepMotor/MDK-ARM/ELA_StepMotor/*.lnp
+Firmware/ELA_StepMotor/MDK-ARM/ELA_StepMotor/build_log.htm
+Firmware/ELA_StepMotor/MDK-ARM/.vscode/
+Reference/zhjStepMotor/Firmware/StepMotorCtrl_42/MDK-ARM/*.uvguix*

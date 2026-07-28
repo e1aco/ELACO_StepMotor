@@ -1,4 +1,4 @@
-/********
+﻿/********
  * @ 文件: ela_can_queue.c
  * @ 作者: ELACO
  * @ 日期: 2026-07-17
@@ -114,4 +114,4 @@ void ela_can_queue_init(QUEUE_T *me)
 }
 
 /* ela_can_queue usr end */
-
+

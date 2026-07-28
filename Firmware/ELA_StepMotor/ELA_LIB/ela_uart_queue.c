@@ -1,4 +1,4 @@
-/********
+﻿/********
  * @ 文件: ela_uart_queue.c
  * @ 作者: ELACO
  * @ 日期: 2026-07-17
@@ -134,4 +134,4 @@ unsigned short ela_uart_queue_count(UART_QUEUE_T *me)
 }
 
 /* ela_uart_queue usr end */
-
+

@@ -1,15 +1,13 @@
 """
-Keil 工程配置工具 — 将 ELA_LIB/ 下的新 .c 文件同步到 .uvprojx 工程
+Keil 工程配置工具 — 将新 .c 文件同步到 .uvprojx 工程
+
+自动扫描 ELA_LIB/ 和 ModTest/ 下的 .c 文件，同步到
+对应 Group（找不到 Group 则新建）。同时检查 IncludePath。
 
 用法:
   python keil_config.py --project <工程.uvprojx>
   python keil_config.py --scan <项目目录>     # 自动扫描 .uvprojx
-
-功能:
-  1. 扫描 ELA_LIB/*.c（相对于 .uvprojx 的 ../ELA_LIB/）
-  2. 检查 .uvprojx 的 <Group>ELA_LIB</Group> 中是否已有
-  3. 无则追加 <File> 节点
-  4. 检查 <IncludePath> 是否包含 ../ELA_LIB，无则追加
+  python keil_config.py --project <工程.uvprojx> --dry-run  # 预览
 """
 
 import sys
@@ -17,9 +15,13 @@ import os
 from pathlib import Path
 import xml.etree.ElementTree as ET
 
-ELA_LIB_GROUP = "ELA_LIB"
-INCLUDE_PATH = "../ELA_LIB"
 PROJECT_EXTENSIONS = {".uvprojx", ".uvproj"}
+
+# (group_name, source_dir_from_uvprojx, include_path)
+SYNC_GROUPS = [
+    ("ELA_LIB", "../ELA_LIB", "../ELA_LIB"),
+    ("ModTest", "../ModTest", "../ModTest"),
+]
 
 
 def find_projects(scan_dir: str) -> list[Path]:
@@ -34,12 +36,74 @@ def find_projects(scan_dir: str) -> list[Path]:
     return results
 
 
-def get_ela_lib_c_files(project_path: Path) -> list[Path]:
-    """获取 ELA_LIB/ 下所有 .c 文件（相对于 .uvprojx 的 ../ELA_LIB/）"""
-    ela_lib_dir = project_path.parent.parent / "ELA_LIB"
-    if not ela_lib_dir.exists():
+def get_c_files(source_dir: Path) -> list[Path]:
+    """获取指定目录下所有 .c 文件"""
+    if not source_dir.exists():
         return []
-    return sorted(ela_lib_dir.rglob("*.c"))
+    return sorted(source_dir.rglob("*.c"))
+
+
+def sync_group_files(group_elem, proj_dir, source_dir) -> tuple:
+    """
+    同步单个 Group 的文件列表。
+    返回 (added_list, skipped_list)。
+    """
+    existing = set()
+    for files_elem in group_elem.findall("Files"):
+        for file_elem in files_elem.findall("File"):
+            fp = file_elem.findtext("FilePath", "")
+            if fp:
+                existing.add(fp.replace("/", "\\"))
+
+    c_files = get_c_files(source_dir)
+    added = []
+    skipped = []
+
+    for c_file in c_files:
+        rel = os.path.relpath(c_file, proj_dir).replace("/", "\\")
+        if rel in existing:
+            skipped.append(rel)
+            continue
+        files_elem = group_elem.find("Files")
+        if files_elem is None:
+            files_elem = ET.SubElement(group_elem, "Files")
+        file_elem = ET.SubElement(files_elem, "File")
+        fp_elem = ET.SubElement(file_elem, "FilePath")
+        fp_elem.text = rel
+        ft_elem = ET.SubElement(file_elem, "FileType")
+        ft_elem.text = "1"
+        added.append(rel)
+
+    return added, skipped
+
+
+def find_or_create_group(groups_elem, group_name: str):
+    """在 groups_elem 下查找 Group，找不到则新建"""
+    for group in groups_elem.findall("Group"):
+        gname = group.findtext("GroupName", "")
+        if gname.strip() == group_name:
+            return group, False
+    new_group = ET.SubElement(groups_elem, "Group")
+    name_elem = ET.SubElement(new_group, "GroupName")
+    name_elem.text = group_name
+    return new_group, True
+
+
+def check_include_path(target_elem, include_path: str) -> bool:
+    """检查并追加 IncludePath，返回是否修改"""
+    tdef_elem = target_elem.find("TargetOption/TargetArmAds/Cads")
+    if tdef_elem is None:
+        return False
+    inc_elem = tdef_elem.find("VariousControls/IncludePath")
+    if inc_elem is None or inc_elem.text is None:
+        return False
+    paths = inc_elem.text.replace("\r\n", ";").replace("\n", ";").split(";")
+    paths = [p.strip() for p in paths]
+    if include_path not in paths and include_path.replace("/", "\\") not in paths:
+        paths.append(include_path)
+        inc_elem.text = ";".join(paths)
+        return True
+    return False
 
 
 def sync_project(project_path: Path, dry_run: bool = False) -> bool:
@@ -49,12 +113,6 @@ def sync_project(project_path: Path, dry_run: bool = False) -> bool:
         return False
 
     proj_dir = project_path.parent
-    c_files = get_ela_lib_c_files(project_path)
-    if not c_files:
-        print(f"  ⏭️  ELA_LIB/ 为空或无 .c 文件，跳过")
-        return False
-
-    print(f"  📂 发现 {len(c_files)} 个 .c 文件")
 
     try:
         tree = ET.parse(project_path)
@@ -65,84 +123,47 @@ def sync_project(project_path: Path, dry_run: bool = False) -> bool:
     root = tree.getroot()
     modified = False
 
-    # ---- 遍历所有 Target，每个 Target 都可能有自己的 Groups ----
     for target in root.iter("Target"):
         target_name = target.findtext("TargetName", "?")
         groups_elem = target.find("Groups")
         if groups_elem is None:
             continue
 
-        # 找 ELA_LIB Group
-        ela_group = None
-        for group in groups_elem.findall("Group"):
-            gname = group.findtext("GroupName", "")
-            if gname.strip() == ELA_LIB_GROUP:
-                ela_group = group
-                break
-
-        if ela_group is None:
-            # 没有 ELA_LIB 组 → 新建
-            print(f"  📁 Target [{target_name}]: 新建 {ELA_LIB_GROUP} 组")
-            new_group = ET.SubElement(groups_elem, "Group")
-            name_elem = ET.SubElement(new_group, "GroupName")
-            name_elem.text = ELA_LIB_GROUP
-            ela_group = new_group
-            modified = True
-
-        # 获取 ELA_LIB 组中已有的文件路径集合
-        existing = set()
-        for files_elem in ela_group.findall("Files"):
-            for file_elem in files_elem.findall("File"):
-                fp = file_elem.findtext("FilePath", "")
-                if fp:
-                    existing.add(fp.replace("/", "\\"))
-
-        # 已有的相对路径列表（用于输出对比）
-        added = []
-        skipped = []
-        for c_file in c_files:
-            rel = os.path.relpath(c_file, proj_dir).replace("/", "\\")
-            if rel in existing:
-                skipped.append(rel)
+        for group_name, rel_dir, inc_path in SYNC_GROUPS:
+            source_dir = (proj_dir / rel_dir).resolve()
+            if not source_dir.exists():
                 continue
-            # 新增 File 节点
-            files_elem = ela_group.find("Files")
-            if files_elem is None:
-                files_elem = ET.SubElement(ela_group, "Files")
-            file_elem = ET.SubElement(files_elem, "File")
-            fp_elem = ET.SubElement(file_elem, "FilePath")
-            fp_elem.text = rel
-            ft_elem = ET.SubElement(file_elem, "FileType")
-            ft_elem.text = "1"  # 1 = C 源文件
-            added.append(rel)
-            modified = True
 
-        if added:
-            print(f"  ✅ Target [{target_name}]: 新增 {len(added)} 个文件")
-            for f in added:
-                print(f"     + {f}")
-        if skipped:
-            print(f"  💡 Target [{target_name}]: {len(skipped)} 个已存在，跳过")
+            group_elem, is_new = find_or_create_group(groups_elem, group_name)
+            if is_new:
+                print(f"  📁 Target [{target_name}]: 新建 {group_name} 组")
+                modified = True
 
-    # ---- IncludePath 检查 ----
+            added, skipped = sync_group_files(
+                group_elem, proj_dir, source_dir)
+
+            if added:
+                print(f"  ✅ Target [{target_name}] {group_name}: "
+                      f"新增 {len(added)} 个文件")
+                for f in added:
+                    print(f"     + {f}")
+                modified = True
+            if skipped:
+                print(f"  💡 Target [{target_name}] {group_name}: "
+                      f"{len(skipped)} 个已存在，跳过")
+
     for target in root.iter("Target"):
         target_name = target.findtext("TargetName", "?")
-        tdef_elem = target.find("TargetOption/TargetArmAds/Cads")
-        if tdef_elem is None:
-            continue
-        inc_elem = tdef_elem.find("VariousControls/IncludePath")
-        if inc_elem is None or inc_elem.text is None:
-            continue
-        paths = inc_elem.text.replace("\r\n", ";").replace("\n", ";").split(";")
-        paths = [p.strip() for p in paths]
-        if INCLUDE_PATH not in paths and INCLUDE_PATH.replace("/", "\\") not in paths:
-            paths.append(INCLUDE_PATH)
-            inc_elem.text = ";".join(paths)
-            modified = True
-            print(f"  ✅ Target [{target_name}]: IncludePath 追加 {INCLUDE_PATH}")
+        for group_name, rel_dir, inc_path in SYNC_GROUPS:
+            source_dir = (proj_dir / rel_dir).resolve()
+            if not source_dir.exists():
+                continue
+            if check_include_path(target, inc_path):
+                print(f"  ✅ Target [{target_name}]: "
+                      f"IncludePath 追加 {inc_path}")
+                modified = True
 
     if modified and not dry_run:
-        # 写回（保留 Keil 的 UTF-8 编码）
         tree.write(project_path, encoding="utf-8", xml_declaration=True)
         print(f"  💾 已保存: {project_path.name}")
     elif modified and dry_run:
@@ -155,10 +176,13 @@ def sync_project(project_path: Path, dry_run: bool = False) -> bool:
 
 def main():
     import argparse
-    parser = argparse.ArgumentParser(description="Keil 工程配置工具 — ELA_LIB 文件同步")
-    parser.add_argument("--project", help=".uvprojx 或 .uvproj 工程文件路径")
-    parser.add_argument("--scan", help="扫描指定目录中的 Keil 工程文件")
-    parser.add_argument("--dry-run", action="store_true", help="预览模式，不写文件")
+    parser = argparse.ArgumentParser(description="Keil 工程配置工具")
+    parser.add_argument("--project",
+                        help=".uvprojx 或 .uvproj 工程文件路径")
+    parser.add_argument("--scan",
+                        help="扫描指定目录中的 Keil 工程文件")
+    parser.add_argument("--dry-run", action="store_true",
+                        help="预览模式，不写文件")
     args = parser.parse_args()
 
     projects = []
@@ -173,7 +197,6 @@ def main():
         for p in projects:
             print(f"   {p}")
     else:
-        # 默认：扫描当前目录
         projects = find_projects(".")
         if not projects:
             print("❌ 当前目录未找到 Keil 工程文件")

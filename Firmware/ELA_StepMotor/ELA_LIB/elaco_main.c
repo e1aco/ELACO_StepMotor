@@ -7,12 +7,14 @@
  ********/
 
 #include "elaco_main.h"
-#include "ela_uart.h"
+#include "ela_uart_usr.h"
 #include "mb.h"
+#include "tim.h"
 
 #ifdef ModTest
     #include "test_mt6816.h"
-    #include "test_tb67h450.h"
+    // #include "test_tb67h450.h"  /* 启用 test_position 时禁用 */
+    #include "test_position.h"
 #endif
 
 /* elaco_main usr start */
@@ -25,14 +27,19 @@ void elaco_main(void)
     ela_uart_printf_init();
     ela_uart3_dma_init();
 
+    // ela_stockfile_init();
+    // elaco_calibration_table_data_valid();
+
 #ifdef ModTest
     // test_mt6816();
-    test_tb67h450();
+    // test_tb67h450();
+    test_position();
+	
 #endif
 
     while (1)
     {
-
+        // elaco_calibration_table_generate_proc();
     }
 }
 
@@ -63,6 +70,21 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
         /* 循环 DMA 每 256 字节触发一次，数据已在 IDLE 时处理 */
     }
 }
+
+#ifndef ModTest
+/********
+ * @ 输入: htim: 触发中断的定时器句柄
+ * @ 说明: TIM4 20kHz 周期中断回调，驱动校准数据采集
+ * @ 注意: ModTest 模式下由 test_tb67h450.c 提供此回调
+ ********/
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+    if (&htim4 == htim)
+    {
+        elaco_calibration_proc();
+    }
+}
+#endif
 
 /* elaco_main cac end */
 

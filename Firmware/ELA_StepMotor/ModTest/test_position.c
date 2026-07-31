@@ -129,23 +129,23 @@ static void test_position_set_led(unsigned char seg)
  * @ 说明: TIM4 20kHz 周期中断回调，步进电机驱动。
  *         s_step 递增 2 直至 s_target，触发制动
  ********/
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
-{
-    if (htim->Instance == TIM4)
-    {
-        if (s_running)
-        {
-            s_step = s_step + 2;
-            ela_tb67h450_set_foc_current(
-                (unsigned int)s_step, 2000);
-            if (s_step >= s_target)
-            {
-                s_running = 0;
-                ela_tb67h450_brake();
-            }
-        }
-    }
-}
+//void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+//{
+//    if (htim->Instance == TIM4)
+//    {
+//        if (s_running)
+//        {
+//            s_step = s_step + 2;
+//            ela_tb67h450_set_foc_current(
+//                (unsigned int)s_step, 2000);
+//            if (s_step >= s_target)
+//            {
+//                s_running = 0;
+//                ela_tb67h450_brake();
+//            }
+//        }
+//    }
+//}
 
 /* test_position cac end */
 //----------------------------------------------------------------------------------

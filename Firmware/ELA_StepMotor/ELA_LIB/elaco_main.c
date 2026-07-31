@@ -14,7 +14,8 @@
 #ifdef ModTest
     #include "test_mt6816.h"
     // #include "test_tb67h450.h"  /* 启用 test_position 时禁用 */
-    #include "test_position.h"
+    // #include "test_position.h"
+    #include "test_pid.h"
 #endif
 
 /* elaco_main usr start */
@@ -33,7 +34,8 @@ void elaco_main(void)
 #ifdef ModTest
     // test_mt6816();
     // test_tb67h450();
-    test_position();
+    // test_position();
+    test_pid();
 	
 #endif
 

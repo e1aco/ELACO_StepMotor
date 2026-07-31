@@ -39,6 +39,7 @@ void ela_tb67h450_set_foc_current(
     if (cur_a >= 0)
     {
         tb67h450_drv_set_dire_a(1, 0);
+        // DAC 转换
         pwm_a = (unsigned short)(cur_a * DAC_SCALE_FACTOR
                                   >> SIN_SCALE);
     }

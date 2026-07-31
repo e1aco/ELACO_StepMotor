@@ -27,6 +27,7 @@ ELACO 步进电机驱动器固件 — STM32F103RET6 + 双 TB67H450FNG H桥 + MT6
 ## 进行中
 - 位置闭环控制（test_position 测试中）
 - 校准表生成（elaco_calibration）
+- 电源电压检测（ela_pow_det_drv/usr — 🔄 验证中）
 
 ## 已知问题
 - FreeModbus USART1 IRQHandler 命名冲突

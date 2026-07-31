@@ -639,6 +639,16 @@
               <FileType>1</FileType>
               <FilePath>..\ELA_LIB\ela_button_usr.c</FilePath>
             </File>
+            <File>
+              <FileName>ela_pow_det_drv.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\ELA_LIB\ela_pow_det_drv.c</FilePath>
+            </File>
+            <File>
+              <FileName>ela_pow_det_usr.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\ELA_LIB\ela_pow_det_usr.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

@@ -8,6 +8,7 @@
 
 #include "elaco_main.h"
 #include "ela_uart_usr.h"
+#include "ela_pow_det_usr.h"
 #include "mb.h"
 #include "tim.h"
 
@@ -27,6 +28,7 @@ void elaco_main(void)
 {
     ela_uart_printf_init();
     ela_uart3_dma_init();
+    ela_pow_det_init();
 
     // ela_stockfile_init();
     // elaco_calibration_table_data_valid();
@@ -42,6 +44,7 @@ void elaco_main(void)
     while (1)
     {
         // elaco_calibration_table_generate_proc();
+        ela_pow_det_tick();
     }
 }
 

@@ -555,6 +555,11 @@
           <GroupName>ELA_LIB</GroupName>
           <Files>
             <File>
+              <FileName>require.md</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\ELA_LIB\require.md</FilePath>
+            </File>
+            <File>
               <FileName>elaco_main.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\ELA_LIB\elaco_main.c</FilePath>
@@ -745,14 +750,9 @@
               <FilePath>..\ModTest\test_mt6816.c</FilePath>
             </File>
             <File>
-              <FileName>test_tb67h450.c</FileName>
+              <FileName>test_position_cl.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\ModTest\test_tb67h450.c</FilePath>
-            </File>
-            <File>
-              <FileName>test_position.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\ModTest\test_position.c</FilePath>
+              <FilePath>..\ModTest\test_position_cl.c</FilePath>
             </File>
             <File>
               <FileName>test_pid.c</FileName>

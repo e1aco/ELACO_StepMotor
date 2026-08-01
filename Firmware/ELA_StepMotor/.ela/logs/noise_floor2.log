@@ -1,0 +1,9 @@
+?--- Encoder Noise Floor Test ---
+A off: min=1 max=14438 span=14437
+B[0]=14457
+B[20]=14461
+B[40]=14461
+B[60]=14465
+B[80]=14465
+B hold: min=14392 max=14482 span=90
+--- Noise Test Done ---

@@ -14,6 +14,7 @@
 #include "elaco_calibration_usr.h"
 #include "ela_motion_run_usr.h"
 #include "ela_mt6816_usr.h"
+#include "ela_cyclecal.h"
 #include "mb.h"
 #include "tim.h"
 
@@ -61,6 +62,56 @@ static void elaco_main_key_angle_test(void)
 }
 
 /********
+ * @ 说明: 一次性 dump 校准表，定位 0°/270° 保持抖动区段的
+ *         微步斜率异常。校准表 g_cali_table[enc] 存该编码器
+ *         对应的绝对微步（51200 一圈），硬件约定编码器随微步
+ *         递减，故表斜率 ≈ -3.125 微步/计数，异常区段斜率
+ *         会明显偏离（过大/过小/非单调）
+ ********/
+static void elaco_main_dump_cali_table(void)
+{
+    int i, d;
+
+    printf("[TBL] coarse scan (every 128), slope = val[+128]-val[]/128\r\n");
+    for (i = 0; i < ENC_RESOLUTION; i += 128)
+    {
+        d = (int)cyclecal_diff(g_cali_table[(i + 128) % ENC_RESOLUTION],
+                               g_cali_table[i], MICROSTEPLAP);
+        printf("[TBL] enc=%4d val=%5u slope=%d.%02d\r\n",
+               i, g_cali_table[i],
+               (d / 128) * 4, abs(d % 128) * 100 / 128);
+    }
+
+    printf("[TBL] fine scan 0deg: enc 16320..16384/0..64\r\n");
+    for (i = 16320; i < ENC_RESOLUTION; i++)
+    {
+        printf("[TBL] enc=%4d val=%5u\r\n", i, g_cali_table[i]);
+    }
+    for (i = 0; i < 64; i++)
+    {
+        printf("[TBL] enc=%4d val=%5u\r\n", i, g_cali_table[i]);
+    }
+
+    printf("[TBL] fine scan 270deg: enc 12224..12352\r\n");
+    for (i = 12224; i < 12352; i++)
+    {
+        printf("[TBL] enc=%4d val=%5u\r\n", i, g_cali_table[i]);
+    }
+
+    printf("[TBL] fine scan 90deg: enc 4032..4160\r\n");
+    for (i = 4032; i < 4160; i++)
+    {
+        printf("[TBL] enc=%4d val=%5u\r\n", i, g_cali_table[i]);
+    }
+
+    printf("[TBL] fine scan 180deg: enc 8128..8256\r\n");
+    for (i = 8128; i < 8256; i++)
+    {
+        printf("[TBL] enc=%4d val=%5u\r\n", i, g_cali_table[i]);
+    }
+}
+
+/********
  * @ 说明: 主循环函数
  ********/
 void elaco_main(void)
@@ -91,9 +142,14 @@ void elaco_main(void)
         HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_4);
         HAL_TIM_Base_Start_IT(&htim4);
 
-        ela_motion_run_goto_target(MOTION_RUN_TGT_0DEG);
-        printf("[MAIN] ctrl init, goto 0deg\r\n");
+        ela_motion_run_demo_start();
+        printf("[MAIN] ctrl init, demo start (0/90/180/270 roundtrip)\r\n");
+
+        /* 诊断：一次性 dump 校准表关键区段（验证后移除） */
+        elaco_main_dump_cali_table();
     }
+
+    printf("[MAIN] enter loop tick=%lu\r\n", (unsigned long)HAL_GetTick());
 
     while (1)
     {
@@ -109,6 +165,9 @@ void elaco_main(void)
 
         /* 测试：KEY1 单击轮切 0/90/180/270° 观察闭环 */
         elaco_main_key_angle_test();
+
+        /* 测试：演示往返调度（0/90/180/270 前进再返回），到位停 500ms */
+        ela_motion_run_demo_poll();
 
         /* 双键同时长按 3s → 手动触发校准 */
         if (ela_button_get_both_long())

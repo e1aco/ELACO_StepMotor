@@ -19,11 +19,12 @@
 #define MOTION_RUN_CTRL_DIV      1     /* 每个 20kHz tick 控制一次 = 20kHz */
 #define MOTION_RUN_KP_SHIFT      6     /* Kp = 1/64 */
 #define MOTION_RUN_MAX_DELTA     4     /* 每控制周期最大微步（查表目标逼近），复刻 run_pid 成功配置 */
+#define MOTION_RUN_HOLD_MAX_DELTA 2    /* 到位保持最大微步（I+D 同款控制器，限幅调温和） */
 #define MOTION_RUN_ERR_ACC_MAX   (MOTION_RUN_MAX_DELTA << MOTION_RUN_KP_SHIFT) /* ±256 防 windup */
 #define MOTION_RUN_SLOW_ERR      64    /* 接近目标（编码器计数）时降速至 ±1 */
 #define MOTION_RUN_DEADBAND      8     /* 到位死区（编码器计数），兼顾回绕边界摆动与定位精度 */
 #define MOTION_RUN_CONFIRM       3     /* 连续带内次数 */
-#define MOTION_RUN_REDRIVE_ERR   32    /* 到位后漂移重驱阈值（编码器计数），超限重新收敛 */
+#define MOTION_RUN_ENC_JUMP      256   /* 单 50µs tick 编码器最大合法跳变，超限视为坏值（满速仅 ~2） */
 #define MOTION_RUN_HOLD_MA       2000
 #define MOTION_RUN_DRIVE_MA      2000
 
@@ -41,8 +42,6 @@ static volatile short s_last_err = 0;
 static volatile unsigned char s_running = 0;
 static volatile unsigned char s_arrived = 0;
 static volatile unsigned char s_inband_cnt = 0;
-static volatile unsigned char s_redrive = 0;  /* 温和重驱进行中（到位后漂移拉回） */
-static volatile unsigned long s_redrive_cnt = 0;  /* 重驱触发次数（主循环诊断输出） */
 
 /* 闭环控制器状态（误差累加器 + 速度阻尼） */
 static volatile int s_err_acc = 0;
@@ -52,39 +51,46 @@ static volatile unsigned short s_prev_enc = 0;
 /* 演示索引 */
 static unsigned char s_demo_idx = 0;
 static unsigned char s_demo_phase = 0;   /* 0: 前进, 1: 返回 */
+static unsigned char s_demo_hold_active = 0;  /* 到位保持计时进行中 */
+static unsigned long s_demo_hold_start = 0;   /* 保持起始 tick */
+#define MOTION_RUN_DEMO_HOLD_MS  3000  /* 到位保持时间，观察收敛 */
 
 /* motion_run hlp start */
 
+static short motion_run_angle_delta(
+    unsigned short curr, unsigned short prev);
+
 /********
- * @ 输出: 编码器角度值（3 次取中值）
- * @ 说明: 读取 MT6816 三次，取中值滤波。
- *         经验：SPI 偶发尖刺 ±70 计数，中值滤除（达标配置）
+ * @ 输出: 编码器角度值（单次读取 + 跳变防护）
+ * @ 说明: 每 20kHz tick 仅调 ela_mt6816_usr_read_angle() 一次，
+ *         其内部含奇偶校验 + 最多 3 次重试，非法值由 data_valid
+ *         标记。另加跳变防护：单 tick（50µs）编码器跳变超
+ *         MOTION_RUN_ENC_JUMP 即视为坏值，沿用上次有效值，
+ *         防止偶发坏值触发控制器误动（拖拽转子）
  ********/
 static unsigned short motion_run_read_median(void)
 {
-    unsigned short v[3];
-    unsigned char i;
+    static unsigned short last_valid = 0;
+    static unsigned char have_valid = 0;
+    unsigned short raw;
+    int jump;
 
-    for (i = 0; i < 3; i++)
-    {
-        ela_mt6816_usr_read_angle();
-        v[i] = g_mt6816_st.raw_angle;
-    }
+    ela_mt6816_usr_read_angle();
+    raw = g_mt6816_st.raw_angle;
 
-    if (v[0] > v[1])
+    if (have_valid)
     {
-        unsigned short t = v[0]; v[0] = v[1]; v[1] = t;
-    }
-    if (v[1] > v[2])
-    {
-        unsigned short t = v[1]; v[1] = v[2]; v[2] = t;
-    }
-    if (v[0] > v[1])
-    {
-        unsigned short t = v[0]; v[0] = v[1]; v[1] = t;
+        jump = motion_run_angle_delta(raw, last_valid);
+        if (jump > MOTION_RUN_ENC_JUMP
+            || jump < -MOTION_RUN_ENC_JUMP)
+        {
+            return last_valid;
+        }
     }
 
-    return v[1];
+    last_valid = raw;
+    have_valid = 1;
+    return raw;
 }
 
 /********
@@ -126,7 +132,6 @@ void ela_motion_run_init(void)
     s_running = 0;
     s_arrived = 0;
     s_inband_cnt = 0;
-    s_redrive = 0;
     s_err_acc = 0;
     s_ctrl_tick = 0;
     s_prev_enc = 0;
@@ -190,7 +195,6 @@ void ela_motion_run_goto_target(unsigned short target)
     s_last_enc = 0;
     s_last_err = 0;
     s_inband_cnt = 0;
-    s_redrive = 0;
     s_err_acc = 0;
     s_prev_enc = enc0;
     s_arrived = 0;
@@ -210,6 +214,8 @@ void ela_motion_run_proc(void)
     int cmd;
     int vel;
     unsigned short enc;
+    int max_delta;
+    unsigned int cur_ma;
 
     /* 4kHz 控制分频：每 5 个 20kHz tick 控制一次 */
     if (++s_ctrl_tick < MOTION_RUN_CTRL_DIV)
@@ -218,69 +224,9 @@ void ela_motion_run_proc(void)
     }
     s_ctrl_tick = 0;
 
-    if (!s_running)
+    /* 从未启动过目标（上电未触发）：不开环 */
+    if (!s_running && !s_arrived)
     {
-        /* 到位后保持监控：磁场已锁定，但持续读编码器，
-         * 漂移超阈值（外力/齿槽扰动）时温和拉回，防开环悬停漂移 */
-        if (s_arrived)
-        {
-            enc = motion_run_read_median();
-            s_last_enc = enc;
-            err = motion_run_angle_delta(s_target_enc, enc);
-            s_last_err = (short)err;
-
-            if (s_redrive)
-            {
-                /* 温和重驱：限速 ±1 微步/周期 + 速度阻尼，拉回死区即停。
-                 * 不复用满增益 I 控制器（err_acc 立即饱和→±4 满速→±800 超冲） */
-                if (err < MOTION_RUN_DEADBAND && err > -MOTION_RUN_DEADBAND)
-                {
-                    s_redrive = 0;
-                }
-                else
-                {
-                    vel = motion_run_angle_delta(enc, s_prev_enc);
-                    s_prev_enc = enc;
-
-                    /* 校准表单调：微步↑ → 编码器↓，故 err>0（需 enc 增）→ step 减。
-                     * 仅当转子未朝目标方向运动时才走一步，向目标方向漂移则滑行（阻尼） */
-                    if (err > 0)
-                    {
-                        if (vel <= 0)
-                        {
-                            s_cur_step--;
-                        }
-                    }
-                    else
-                    {
-                        if (vel >= 0)
-                        {
-                            s_cur_step++;
-                        }
-                    }
-
-                    if (s_cur_step < 0)
-                    {
-                        s_cur_step += MICROSTEPLAP;
-                    }
-                    else if (s_cur_step >= MICROSTEPLAP)
-                    {
-                        s_cur_step -= MICROSTEPLAP;
-                    }
-                    ela_tb67h450_set_foc_current(
-                        (unsigned int)s_cur_step, MOTION_RUN_HOLD_MA);
-                }
-                return;
-            }
-
-            if (err > MOTION_RUN_REDRIVE_ERR
-                || err < -MOTION_RUN_REDRIVE_ERR)
-            {
-                s_redrive = 1;
-                s_prev_enc = enc;
-                s_redrive_cnt++;
-            }
-        }
         return;
     }
 
@@ -295,27 +241,70 @@ void ela_motion_run_proc(void)
     vel = motion_run_angle_delta(enc, s_prev_enc);
     s_prev_enc = enc;
 
-    /* 到位判定：带内（|err|<±4）连续 CONFIRM 次。
-     * 接近目标已降速至 ±1，扫过死区速度极低，无需速度门 */
-    if (err < MOTION_RUN_DEADBAND && err > -MOTION_RUN_DEADBAND)
+    if (s_arrived)
     {
-        if (s_inband_cnt < MOTION_RUN_CONFIRM)
+        /* 到位保持：磁场基准锚定到校准表磁点 table[enc]（当前编码器
+         * 位置对应的零转矩微步）。s_cur_step 原为自由积分器，在 0°/270°
+         * 会把磁场停在磁点之间 → 误差持续饱和 → 20kHz 满圈扫掠极限环
+         * （enc ±1500 横跳、cur 满圈横扫）；锚定后磁场始终贴住磁点，
+         * 仅叠加 ±2 微步比例校正（增益 1/4），带外立即生效温和拉回 */
+        if (err < MOTION_RUN_DEADBAND && err > -MOTION_RUN_DEADBAND)
         {
-            s_inband_cnt++;
+            s_err_acc = 0;
+            s_cur_step = (int)g_cali_table[enc];
             ela_tb67h450_set_foc_current(
                 (unsigned int)s_cur_step, MOTION_RUN_HOLD_MA);
             return;
         }
 
-        s_arrived = 1;
-        s_running = 0;
-        s_err_acc = 0;
+        cmd = err >> 2;
+        if (cmd > MOTION_RUN_HOLD_MAX_DELTA)
+        {
+            cmd = MOTION_RUN_HOLD_MAX_DELTA;
+        }
+        else if (cmd < -MOTION_RUN_HOLD_MAX_DELTA)
+        {
+            cmd = -MOTION_RUN_HOLD_MAX_DELTA;
+        }
+        s_cur_step = (int)g_cali_table[enc] - cmd;
+        if (s_cur_step < 0)
+        {
+            s_cur_step += MICROSTEPLAP;
+        }
+        else if (s_cur_step >= MICROSTEPLAP)
+        {
+            s_cur_step -= MICROSTEPLAP;
+        }
         ela_tb67h450_set_foc_current(
             (unsigned int)s_cur_step, MOTION_RUN_HOLD_MA);
         return;
     }
+    else
+    {
+        /* 到位判定：带内（|err|<±4）连续 CONFIRM 次。
+         * 接近目标已降速至 ±1，扫过死区速度极低，无需速度门 */
+        if (err < MOTION_RUN_DEADBAND && err > -MOTION_RUN_DEADBAND)
+        {
+            if (s_inband_cnt < MOTION_RUN_CONFIRM)
+            {
+                s_inband_cnt++;
+                ela_tb67h450_set_foc_current(
+                    (unsigned int)s_cur_step, MOTION_RUN_HOLD_MA);
+                return;
+            }
 
-    s_inband_cnt = 0;
+            s_arrived = 1;
+            s_running = 0;
+            s_err_acc = 0;
+            ela_tb67h450_set_foc_current(
+                (unsigned int)s_cur_step, MOTION_RUN_HOLD_MA);
+            return;
+        }
+
+        s_inband_cnt = 0;
+        max_delta = MOTION_RUN_MAX_DELTA;
+        cur_ma = MOTION_RUN_DRIVE_MA;
+    }
 
     /* 误差累加器（I 主导），带 ±256 上限防 windup */
     s_err_acc += err;
@@ -346,13 +335,13 @@ void ela_motion_run_proc(void)
             cmd = -1;
         }
     }
-    else if (cmd > MOTION_RUN_MAX_DELTA)
+    else if (cmd > max_delta)
     {
-        cmd = MOTION_RUN_MAX_DELTA;
+        cmd = max_delta;
     }
-    else if (cmd < -MOTION_RUN_MAX_DELTA)
+    else if (cmd < -max_delta)
     {
-        cmd = -MOTION_RUN_MAX_DELTA;
+        cmd = -max_delta;
     }
 
     /* 速度式积分回馈：应用了多少就从累加器减多少（防 windup） */
@@ -368,13 +357,14 @@ void ela_motion_run_proc(void)
     {
         s_cur_step -= MICROSTEPLAP;
     }
-    ela_tb67h450_set_foc_current(
-        (unsigned int)s_cur_step, MOTION_RUN_DRIVE_MA);
+    ela_tb67h450_set_foc_current((unsigned int)s_cur_step, cur_ma);
 }
 
 /********
  * @ 说明: 演示调度，在主循环中调用。
- *         到位后停 500ms 前进到下一个目标，走完一圈返回起点
+ *         到位后保持 MOTION_RUN_DEMO_HOLD_MS（非阻塞，期间
+ *         主循环继续输出 [RUN]/[POW_DET] 观察收敛），
+ *         然后前进到下一个目标，走完一圈返回起点
  ********/
 void ela_motion_run_demo_poll(void)
 {
@@ -383,7 +373,23 @@ void ela_motion_run_demo_poll(void)
         return;
     }
 
-    HAL_Delay(500);
+    /* 到位时刻：启动保持计时（仅一次） */
+    if (!s_demo_hold_active)
+    {
+        s_demo_hold_active = 1;
+        s_demo_hold_start = HAL_GetTick();
+        return;
+    }
+
+    /* 保持未满：继续观察 */
+    if ((unsigned long)(HAL_GetTick() - s_demo_hold_start)
+        < MOTION_RUN_DEMO_HOLD_MS)
+    {
+        return;
+    }
+
+    /* 保持结束：前进到下一目标 */
+    s_demo_hold_active = 0;
 
     if (0 == s_demo_phase)
     {
@@ -422,10 +428,10 @@ void ela_motion_run_debug_print(void)
     short err = motion_run_angle_delta(
         g_mt6816_st.raw_angle, s_target_enc);
 
-    printf("[RUN] enc=%u tgt=%u err=%d cur=%d stepT=%d valid=%d running=%d redrive=%lu\r\n",
+    printf("[RUN] enc=%u tgt=%u err=%d cur=%d stepT=%d valid=%d running=%d hold=%d\r\n",
            g_mt6816_st.raw_angle, s_target_enc, err,
            s_cur_step, s_target_step,
-           g_mt6816_st.data_valid, s_running, s_redrive_cnt);
+           g_mt6816_st.data_valid, s_running, s_arrived);
 }
 
 /* motion_run usr end */

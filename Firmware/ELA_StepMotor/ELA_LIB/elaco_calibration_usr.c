@@ -323,7 +323,15 @@ static void calibration_generate_table(void)
      * 保证整体严格按 encoder 值 0..16383 递增写表 */
     for (int off = 0; off <= WHOLESTEPLAP; off++)
     {
-        int k = cyclecal_mod(jump - off, WHOLESTEPLAP);
+        /* jump - off 可为负，须先加回一圈再取模，否则负值经
+         * cyclecal_mod(unsigned) 隐式转换得到巨大数，k 错位
+         * （如 -1 % 200 → 95 而非 199），导致表后半圈偏移 */
+        int k = jump - off;
+
+        if (k < 0)
+        {
+            k += WHOLESTEPLAP;
+        }
         int e_hi = g_calibra_st.avg_fr_data[k];
         int e_lo = g_calibra_st.avg_fr_data[
             cyclecal_mod(k + 1, WHOLESTEPLAP)];

@@ -29,7 +29,8 @@ ELACO 步进电机驱动器固件 — STM32F103RET6 + 双 TB67H450FNG H桥 + MT6
 
 ## 进行中
 - 位置闭环控制（test_position_cl 已达标，待整合进主流程）
-- 校准表生成（elaco_calibration）
+- 校准表生成（elaco_calibration）✅ S5 硬件跑通：MT6816 读取修复 + 16 次采样 + Flash 表有效
+  - HVR-cali-table-002 通过；表重复性 ±3~6 微步（校准起点随机所致，不影响查表使用）
 
 ## 已知问题
 - FreeModbus USART1 IRQHandler 命名冲突
@@ -42,6 +43,12 @@ ELACO 步进电机驱动器固件 — STM32F103RET6 + 双 TB67H450FNG H桥 + MT6
 - MT6816 读取恒为 0：`ela_mt6816_usr_read_angle()` 原来发送 0xFFFF 哑命令，芯片返回 0。
   已改为 4 线 SPI 读寄存器命令（0x8300/0x8400）+ 整字偶校验 + 弱磁标志，
   USART3 printf 调试口（COM5 115200）实测 `raw:0x66C0 ang:6576 v:1 m:0`。
+
+## 已修复（2026-08-02）
+- MT6816 读取修复整合进工程实际引用的 `ela_mt6816_usr.c`（原修复版 `ela_mt6816.c` 未编译进工程）：
+  `ela_mt6816_usr_read_angle()` 由 0xFFFF 哑命令改为 0x8300/0x8400 读寄存器命令 + 整字偶校验 + magnet_valid
+- 校准采样增强：`SAMPLE_PER_STEP` 10 → 16（2^4），降低编码器读数噪声（s16↔s16b avgAbsDiff=5.91）
+- 校准表 Flash 落盘验证通过：dump 0x08020000 有效（16384 halfword 单调递减、单环绕、无 0xFFFF）
 
 ## 位置闭环调参历程（2026-08-02，cl6~cl33）
 - cl6：唯一历史达标版本，源码丢失（文件未跟踪被覆盖），仅留日志参照

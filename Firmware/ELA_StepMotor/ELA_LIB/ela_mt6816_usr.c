@@ -48,31 +48,37 @@ void ela_mt6816_usr_init(void)
 /********
  * @ 输出: 角度结构体指针
  * @ 说明: 读取编码器角度，含重试和奇偶校验
- * @ 注意: 最多重试 3 次 SPI 读取直到偶校验通过
+ * @ 注意: 帧 1 发送 0x8300 读 ANGLE 寄存器（角度高 8 位），
+ *         帧 2 发送 0x8400 读 RAW_ANGLE 寄存器（角度低 6 位 +
+ *         bit1 弱磁报警 + bit0 偶校验位），拼装后整字偶校验
  ********/
 MT6816_ANGLE_T *ela_mt6816_usr_read_angle(void)
 {
     unsigned char retry = 0;
-    unsigned char parity;
-    static uint16_t raw_angle_value;
-    uint16_t angle_value;
+    uint16_t tx_angle;
+    uint16_t tx_raw;
+    uint16_t rx_angle = 0;
+    uint16_t rx_raw = 0;
 
-    raw_angle_value = 0;
+    tx_angle = (MT6816_CMD_READ_BIT | MT6816_CMD_ANGLE) << 8;
+    tx_raw = (MT6816_CMD_READ_BIT | MT6816_CMD_RAW_ANGLE) << 8;
 
     for (retry = 0; retry < 3; retry++)
     {
         /* ANGLE 寄存器通过帧 1 读取 */
-        angle_value = mt6816_drv_spi_transfer(0xFFFF);
-        raw_angle_value = mt6816_drv_spi_transfer(0xFFFF);
+        rx_angle = mt6816_drv_spi_transfer(tx_angle);
+        rx_raw = mt6816_drv_spi_transfer(tx_raw);
 
-        g_mt6816_st.raw_angle = raw_angle_value & 0x3FFF;
-        g_mt6816_st.raw_data = angle_value;
-        parity = mt6816_usr_even_parity(raw_angle_value);
+        g_mt6816_st.raw_data =
+            ((rx_angle & 0x00FF) << 8) | (rx_raw & 0x00FF);
 
-        if (0 == parity)
+        if (0 == mt6816_usr_even_parity(g_mt6816_st.raw_data))
         {
             g_mt6816_st.data_valid = true;
-            return &g_mt6816_st;
+            g_mt6816_st.raw_angle = g_mt6816_st.raw_data >> 2;
+            g_mt6816_st.magnet_valid =
+                (bool)(g_mt6816_st.raw_data & (0x0001 << 1));
+            break;
         }
 
         g_mt6816_st.data_valid = false;

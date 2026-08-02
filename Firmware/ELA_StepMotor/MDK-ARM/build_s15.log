@@ -1,0 +1,14 @@
+*** Using Compiler 'V5.06 update 7 (build 960)', folder: 'D:\keil5\ARM\ARM_Compiler_5.06u7\Bin'
+Build target 'ELA_StepMotor'
+compiling ela_motion_run_usr.c...
+..\ELA_LIB\ela_motion_run_usr.c(189): warning:  #223-D: function "printf" declared implicitly
+      printf("[GOTO] enc0=%u step0=%d tgt=%u stepT=%d\r\n",
+..\ELA_LIB\ela_motion_run_usr.c(364): warning:  #223-D: function "printf" declared implicitly
+      printf("[RUN] enc=%u tgt=%u err=%d cur=%d stepT=%d idx=%u valid=%d raw=%u running=%d\r\n",
+..\ELA_LIB\ela_motion_run_usr.c: 2 warnings, 0 errors
+compiling elaco_main.c...
+linking...
+Program Size: Code=23776 RO-data=2576 RW-data=292 ZI-data=4436  
+FromELF: creating hex file...
+"ELA_StepMotor\ELA_StepMotor.axf" - 0 Error(s), 2 Warning(s).
+Build Time Elapsed:  00:00:02

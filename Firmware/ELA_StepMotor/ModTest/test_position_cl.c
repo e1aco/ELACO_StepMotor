@@ -163,105 +163,105 @@ static void test_position_cl_set_led(unsigned char seg)
  *         电角度步进；误差累加器带 ±256 上限（防 windup），
  *         连续 INBAND_CONFIRM 次落在死区即判定到位并保持
  ********/
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
-{
-    int r;
-    int delta;
-    int err;
-    int cmd;
+//void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+//{
+//    int r;
+//    int delta;
+//    int err;
+//    int cmd;
 
-    if (htim->Instance != TIM4)
-    {
-        return;
-    }
+//    if (htim->Instance != TIM4)
+//    {
+//        return;
+//    }
 
-    if (!s_cl_running)
-    {
-        return;
-    }
+//    if (!s_cl_running)
+//    {
+//        return;
+//    }
 
-    if (++s_cl_tick < CTRL_DIV)
-    {
-        return;
-    }
-    s_cl_tick = 0;
+//    if (++s_cl_tick < CTRL_DIV)
+//    {
+//        return;
+//    }
+//    s_cl_tick = 0;
 
-    /* 每控制周期读 3 次、对原始位置取中值（滤 SPI 毛刺），
-     * 相对段起始原始值做回绕差，无累加链、无跨段漂移 */
-    r = test_position_cl_read_median();
+//    /* 每控制周期读 3 次、对原始位置取中值（滤 SPI 毛刺），
+//     * 相对段起始原始值做回绕差，无累加链、无跨段漂移 */
+//    r = test_position_cl_read_median();
 
-    delta = test_position_cl_angle_delta(
-        (unsigned short)r, (unsigned short)s_cl_seg_start);
-    err = s_cl_target - delta;
+//    delta = test_position_cl_angle_delta(
+//        (unsigned short)r, (unsigned short)s_cl_seg_start);
+//    err = s_cl_target - delta;
 
-    s_cl_last_enc = r;
-    s_cl_last_err = err;
-    s_cl_ctrl_cnt++;
+//    s_cl_last_enc = r;
+//    s_cl_last_err = err;
+//    s_cl_ctrl_cnt++;
 
-    {
-        int vel = delta - s_cl_prev_delta;   /* 速度（计数/控制周期） */
-        s_cl_prev_delta = delta;
+//    {
+//        int vel = delta - s_cl_prev_delta;   /* 速度（计数/控制周期） */
+//        s_cl_prev_delta = delta;
 
-        if (err < DEADBAND && err > -DEADBAND)
-        {
-            if (s_cl_inband_cnt < INBAND_CONFIRM)
-            {
-                s_cl_inband_cnt++;
-                ela_tb67h450_set_foc_current(
-                    (unsigned int)s_cl_step, HOLD_MA);
-                return;
-            }
+//        if (err < DEADBAND && err > -DEADBAND)
+//        {
+//            if (s_cl_inband_cnt < INBAND_CONFIRM)
+//            {
+//                s_cl_inband_cnt++;
+//                ela_tb67h450_set_foc_current(
+//                    (unsigned int)s_cl_step, HOLD_MA);
+//                return;
+//            }
 
-            s_cl_arrived = 1;
-            s_cl_err_acc = 0;
-            ela_tb67h450_set_foc_current(
-                (unsigned int)s_cl_step, HOLD_MA);
-            return;
-        }
+//            s_cl_arrived = 1;
+//            s_cl_err_acc = 0;
+//            ela_tb67h450_set_foc_current(
+//                (unsigned int)s_cl_step, HOLD_MA);
+//            return;
+//        }
 
-        s_cl_inband_cnt = 0;
+//        s_cl_inband_cnt = 0;
 
-        s_cl_err_acc += err;
+//        s_cl_err_acc += err;
 
-        if (s_cl_err_acc > ERR_ACC_MAX)
-        {
-            s_cl_err_acc = ERR_ACC_MAX;
-        }
-        else if (s_cl_err_acc < -ERR_ACC_MAX)
-        {
-            s_cl_err_acc = -ERR_ACC_MAX;
-        }
+//        if (s_cl_err_acc > ERR_ACC_MAX)
+//        {
+//            s_cl_err_acc = ERR_ACC_MAX;
+//        }
+//        else if (s_cl_err_acc < -ERR_ACC_MAX)
+//        {
+//            s_cl_err_acc = -ERR_ACC_MAX;
+//        }
 
-        cmd = s_cl_err_acc >> KP_SHIFT;
+//        cmd = s_cl_err_acc >> KP_SHIFT;
 
-        /* 速度阻尼：抵消转子欠阻尼振荡（±10~40 计数极限环）。
-         * vel 单位是计数/周期，1 微步 ≈ 0.32 计数，故右移 1 相当阻尼系数 ~1.5 */
-        cmd -= (vel >> 1);
+//        /* 速度阻尼：抵消转子欠阻尼振荡（±10~40 计数极限环）。
+//         * vel 单位是计数/周期，1 微步 ≈ 0.32 计数，故右移 1 相当阻尼系数 ~1.5 */
+//        cmd -= (vel >> 1);
 
-        /* 接近目标（|err|<64 计数）时降至 1 微步/周期，
-         * 避免高速冲入死区造成过冲-反弹 */
-        if (err < 64 && err > -64)
-        {
-            if (cmd > 1) cmd = 1;
-            else if (cmd < -1) cmd = -1;
-        }
-        else if (cmd > MAX_DELTA)
-        {
-            cmd = MAX_DELTA;
-        }
-        else if (cmd < -MAX_DELTA)
-        {
-            cmd = -MAX_DELTA;
-        }
+//        /* 接近目标（|err|<64 计数）时降至 1 微步/周期，
+//         * 避免高速冲入死区造成过冲-反弹 */
+//        if (err < 64 && err > -64)
+//        {
+//            if (cmd > 1) cmd = 1;
+//            else if (cmd < -1) cmd = -1;
+//        }
+//        else if (cmd > MAX_DELTA)
+//        {
+//            cmd = MAX_DELTA;
+//        }
+//        else if (cmd < -MAX_DELTA)
+//        {
+//            cmd = -MAX_DELTA;
+//        }
 
-        s_cl_err_acc -= cmd << KP_SHIFT;
+//        s_cl_err_acc -= cmd << KP_SHIFT;
 
-        /* 编码器递增方向对应 s_cl_step 递减方向 */
-        s_cl_step -= cmd;
-        ela_tb67h450_set_foc_current(
-            (unsigned int)s_cl_step, DRIVE_MA);
-    }
-}
+//        /* 编码器递增方向对应 s_cl_step 递减方向 */
+//        s_cl_step -= cmd;
+//        ela_tb67h450_set_foc_current(
+//            (unsigned int)s_cl_step, DRIVE_MA);
+//    }
+//}
 
 /* test_position_cl cac end */
 //----------------------------------------------------------------------------------

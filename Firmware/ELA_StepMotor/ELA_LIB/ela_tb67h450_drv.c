@@ -12,17 +12,18 @@
 /* tb67h450 drv start */
 
 /********
- * @ 输入: current_a: A 相 PWM 占空比
- *         current_b: B 相 PWM 占空比
- * @ 说明: 设置两相 PWM 占空比
+ * @ 输入: current_a: A 相电流值 (DAC 12-bit 0~4095)
+ *         current_b: B 相电流值 (DAC 12-bit 0~4095)
+ * @ 说明: 设置两相电流，右移2位把 12-bit DAC 值
+ *         映射到 TIM2 10-bit PWM (ARR=1023)
  ********/
 void tb67h450_drv_set_two_coils_current(
     uint16_t current_a, uint16_t current_b)
 {
     __HAL_TIM_SET_COMPARE(&htim2,
-                          TIM_CHANNEL_4, current_a);
+                          TIM_CHANNEL_4, current_a >> 2);
     __HAL_TIM_SET_COMPARE(&htim2,
-                          TIM_CHANNEL_3, current_b);
+                          TIM_CHANNEL_3, current_b >> 2);
 }
 
 /********

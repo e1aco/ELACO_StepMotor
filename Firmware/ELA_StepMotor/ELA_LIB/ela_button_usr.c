@@ -19,6 +19,11 @@ static bool s_click_flag[BUTTON_NUM + 1];
 static bool s_long_flag[BUTTON_NUM + 1];
 static bool s_last_state[BUTTON_NUM + 1];
 
+/* 双键同时长按检测（SW1+SW2） */
+static bool s_both_flag = false;
+static bool s_both_last = false;
+static uint32_t s_both_press_time = 0;
+
 /* button usr start */
 
 /********
@@ -77,6 +82,19 @@ void ela_button_tick(void)
 
         s_last_state[i] = cur;
     }
+
+    /* 双键同时长按：SW1(2)+SW2(1) 同按 3s 触发一次 */
+    bool both = s_pressed[1] && s_pressed[2];
+    if (both && !s_both_last)
+    {
+        s_both_press_time = now;
+    }
+    if (both && !s_both_flag
+        && (now - s_both_press_time) >= LONG_PRESS_MS)
+    {
+        s_both_flag = true;
+    }
+    s_both_last = both;
 }
 
 /********
@@ -110,6 +128,20 @@ bool ela_button_get_long(uint8_t id)
     if (s_long_flag[id])
     {
         s_long_flag[id] = false;
+        return true;
+    }
+    return false;
+}
+
+/********
+ * @ 输出: true=检测到双键同时长按
+ * @ 说明: 读取双键同时长按标志（SW1+SW2 同按 3s），读取后自动清除
+ ********/
+bool ela_button_get_both_long(void)
+{
+    if (s_both_flag)
+    {
+        s_both_flag = false;
         return true;
     }
     return false;

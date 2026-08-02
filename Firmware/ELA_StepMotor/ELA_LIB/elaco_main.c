@@ -12,22 +12,53 @@
 #include "ela_button_usr.h"
 #include "ela_stockfile_usr.h"
 #include "elaco_calibration_usr.h"
+#include "ela_motion_run_usr.h"
+#include "ela_mt6816_usr.h"
 #include "mb.h"
 #include "tim.h"
-
-#ifdef ModTest
-    #include "test_mt6816.h"
-    // #include "test_tb67h450.h"  /* 启用 test_position 时禁用 */
-    // #include "test_position.h"
-    // #include "test_position_cl.h"
-    // #include "test_pid.h"
-    // #include "test_openloop.h"
-#endif
 
 /* elaco_main usr start */
 
 /* LED 点亮电平：默认低电平点亮，硬件验证时按实际极性调整 */
 #define LED_ON_LEVEL  GPIO_PIN_RESET
+
+/* 测试：KEY1 单击轮切目标角度索引（0/90/180/270°） */
+#define KEY_TST_TARGETS  MOTION_RUN_TARGET_NUM
+static unsigned char s_key_tst_idx = 0;
+static uint32_t s_tick_last = 0;
+static const unsigned short s_key_tst_targets[KEY_TST_TARGETS] = {
+    MOTION_RUN_TGT_0DEG, MOTION_RUN_TGT_90DEG,
+    MOTION_RUN_TGT_180DEG, MOTION_RUN_TGT_270DEG
+};
+
+/********
+ * @ 说明: KEY1 单击轮切目标角度。仅在上电回零完成（闭环空闲）
+ *         时响应，避免打断进行中的运动。到达后打印闭环数据
+ ********/
+static void elaco_main_key_angle_test(void)
+{
+    if (!ela_button_get_click(1))
+    {
+        return;
+    }
+
+    if (!ela_motion_run_is_idle())
+    {
+        printf("[KEY] busy, skip\r\n");
+        return;
+    }
+
+    s_key_tst_idx++;
+    if (s_key_tst_idx >= KEY_TST_TARGETS)
+    {
+        s_key_tst_idx = 0;
+    }
+
+    ela_motion_run_goto_target(s_key_tst_targets[s_key_tst_idx]);
+    ela_motion_run_debug_print();
+    printf("[KEY] goto %ddeg\r\n",
+           (int)(s_key_tst_targets[s_key_tst_idx] / (ENC_RESOLUTION / 360)));
+}
 
 /********
  * @ 说明: 主循环函数
@@ -49,22 +80,35 @@ void elaco_main(void)
                           LED_ON_LEVEL);
     }
 
-#ifdef ModTest
-    // test_mt6816();
-    // test_tb67h450();
-    // test_position();
-    //test_position_cl();
-    // test_position_noise();
-    // test_pid();
-    // test_openloop();
-    /* 校准表采集验证：上电自动触发开环采集一圈正+一圈反 */
-    elaco_calibration_start();
-#endif
+    /* 正式模式：有校准表 → 上电闭环回零；无表 → LED 提示待校准 */
+    ela_motion_run_init();
+    if (g_calibra_st.calitable_flag)
+    {
+        /* 启动电机驱动 PWM 与控制中断（TIM4 20kHz）。
+         * 此前 PWM/中断仅在校准启动时开启，正式模式须显式启动 */
+        ela_mt6816_usr_init();
+        HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_3);
+        HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_4);
+        HAL_TIM_Base_Start_IT(&htim4);
+
+        ela_motion_run_goto_target(MOTION_RUN_TGT_0DEG);
+        printf("[MAIN] ctrl init, goto 0deg\r\n");
+    }
 
     while (1)
     {
         ela_button_tick();
         elaco_calibration_table_generate_proc();
+
+        /* 测试：周期打印闭环状态（诊断用，验证后移除） */
+        if ((HAL_GetTick() - s_tick_last) >= 500)
+        {
+            s_tick_last = HAL_GetTick();
+            ela_motion_run_debug_print();
+        }
+
+        /* 测试：KEY1 单击轮切 0/90/180/270° 观察闭环 */
+        elaco_main_key_angle_test();
 
         /* 双键同时长按 3s → 手动触发校准 */
         if (ela_button_get_both_long())
@@ -106,15 +150,21 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 
 /********
  * @ 输入: htim: 触发中断的定时器句柄
- * @ 说明: TIM4 20kHz 周期中断回调，驱动校准数据采集
- * @ 注意: 唯一实现（ModTest 下 test_openloop 已禁用，
- *         elaco_main 统一提供此回调）
+ * @ 说明: TIM4 20kHz 周期中断回调。校准未运行时跑闭环控制，
+ *         校准（开环跑圈）进行时暂停闭环，互斥分派
  ********/
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
     if (&htim4 == htim)
     {
-        elaco_calibration_proc();
+        if (g_calibra_st.cali_step == CALI_STEP_IDLE)
+        {
+            ela_motion_run_proc();
+        }
+        else
+        {
+            elaco_calibration_proc();
+        }
     }
 }
 

@@ -395,7 +395,7 @@ void EncoderCalibrator_Tick20kHz(void)
                 cali_state = 2;
             }
             break;
-
+	
         case 2: /* 正向测量：正转一圈，采集数据 */
             if ((go_pos % SOFT_DIVIDE) == 0) {
                 raw = MT6816_GetRawAngle();

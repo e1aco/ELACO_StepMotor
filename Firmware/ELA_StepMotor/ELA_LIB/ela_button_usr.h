@@ -17,6 +17,7 @@ void ela_button_init(void);
 void ela_button_tick(void);
 bool ela_button_get_click(uint8_t id);
 bool ela_button_get_long(uint8_t id);
+bool ela_button_get_both_long(void);
 bool ela_button_is_pressed(uint8_t id);
 
 #endif

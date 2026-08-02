@@ -340,7 +340,7 @@
               <MiscControls></MiscControls>
               <Define>USE_HAL_DRIVER,STM32F103xE</Define>
               <Undefine></Undefine>
-              <IncludePath>../Core/Inc;../Drivers/STM32F1xx_HAL_Driver/Inc;../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy;../Drivers/CMSIS/Device/ST/STM32F1xx/Include;../Drivers/CMSIS/Include;../ELA_LIB;../FreeModbus/modbus;../ModTest</IncludePath>
+              <IncludePath>../Core/Inc;../Drivers/STM32F1xx_HAL_Driver/Inc;../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy;../Drivers/CMSIS/Device/ST/STM32F1xx/Include;../Drivers/CMSIS/Include;../ELA_LIB;../FreeModbus/modbus</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -654,6 +654,11 @@
               <FileType>1</FileType>
               <FilePath>..\ELA_LIB\ela_pow_det_usr.c</FilePath>
             </File>
+            <File>
+              <FileName>ela_motion_run_usr.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\ELA_LIB\ela_motion_run_usr.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -738,26 +743,6 @@
               <FileName>porttimer.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\FreeModbus\modbus\porttimer.c</FilePath>
-            </File>
-          </Files>
-        </Group>
-        <Group>
-          <GroupName>ModTest</GroupName>
-          <Files>
-            <File>
-              <FileName>test_mt6816.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\ModTest\test_mt6816.c</FilePath>
-            </File>
-            <File>
-              <FileName>test_position_cl.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\ModTest\test_position_cl.c</FilePath>
-            </File>
-            <File>
-              <FileName>test_pid.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\ModTest\test_pid.c</FilePath>
             </File>
           </Files>
         </Group>

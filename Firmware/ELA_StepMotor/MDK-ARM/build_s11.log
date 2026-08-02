@@ -1,0 +1,11 @@
+*** Using Compiler 'V5.06 update 7 (build 960)', folder: 'D:\keil5\ARM\ARM_Compiler_5.06u7\Bin'
+Build target 'ELA_StepMotor'
+compiling ela_tb67h450_usr.c...
+..\ELA_LIB\ela_tb67h450_usr.c(92): warning:  #177-D: function "tb67h450_usr_abs"  was declared but never referenced
+  static short tb67h450_usr_abs(short val)
+..\ELA_LIB\ela_tb67h450_usr.c: 1 warning, 0 errors
+linking...
+Program Size: Code=21976 RO-data=2488 RW-data=268 ZI-data=4420  
+FromELF: creating hex file...
+"ELA_StepMotor\ELA_StepMotor.axf" - 0 Error(s), 1 Warning(s).
+Build Time Elapsed:  00:00:01

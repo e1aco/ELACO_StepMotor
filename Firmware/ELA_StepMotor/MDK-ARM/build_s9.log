@@ -1,0 +1,19 @@
+*** Using Compiler 'V5.06 update 7 (build 960)', folder: 'D:\keil5\ARM\ARM_Compiler_5.06u7\Bin'
+Build target 'ELA_StepMotor'
+compiling ela_tb67h450_usr.c...
+..\ELA_LIB\ela_tb67h450_usr.c(91): warning:  #177-D: function "tb67h450_usr_abs"  was declared but never referenced
+  static short tb67h450_usr_abs(short val)
+..\ELA_LIB\ela_tb67h450_usr.c: 1 warning, 0 errors
+compiling test_openloop.c...
+compiling elaco_calibration_usr.c...
+compiling test_position_cl.c...
+..\ModTest\test_position_cl.c(53): warning:  #177-D: variable "s_cl_tick"  was declared but never referenced
+  static unsigned char s_cl_tick = 0;
+..\ModTest\test_position_cl.c(54): warning:  #550-D: variable "s_cl_inband_cnt"  was set but never used
+  static unsigned char s_cl_inband_cnt = 0;
+..\ModTest\test_position_cl.c: 2 warnings, 0 errors
+linking...
+Program Size: Code=21984 RO-data=2488 RW-data=268 ZI-data=4420  
+FromELF: creating hex file...
+"ELA_StepMotor\ELA_StepMotor.axf" - 0 Error(s), 3 Warning(s).
+Build Time Elapsed:  00:00:02

@@ -7,14 +7,14 @@ stepmotorctrl_42\stm32f1xx_it.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_h
 stepmotorctrl_42\stm32f1xx_it.o: ../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f1xx.h
 stepmotorctrl_42\stm32f1xx_it.o: ../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f103xb.h
 stepmotorctrl_42\stm32f1xx_it.o: ../Drivers/CMSIS/Include/core_cm3.h
-stepmotorctrl_42\stm32f1xx_it.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdint.h
+stepmotorctrl_42\stm32f1xx_it.o: D:\keil5\ARM\ARM_Compiler_5.06u7\Bin\..\include\stdint.h
 stepmotorctrl_42\stm32f1xx_it.o: ../Drivers/CMSIS/Include/cmsis_version.h
 stepmotorctrl_42\stm32f1xx_it.o: ../Drivers/CMSIS/Include/cmsis_compiler.h
 stepmotorctrl_42\stm32f1xx_it.o: ../Drivers/CMSIS/Include/cmsis_armcc.h
 stepmotorctrl_42\stm32f1xx_it.o: ../Drivers/CMSIS/Device/ST/STM32F1xx/Include/system_stm32f1xx.h
 stepmotorctrl_42\stm32f1xx_it.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h
 stepmotorctrl_42\stm32f1xx_it.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h
-stepmotorctrl_42\stm32f1xx_it.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stddef.h
+stepmotorctrl_42\stm32f1xx_it.o: D:\keil5\ARM\ARM_Compiler_5.06u7\Bin\..\include\stddef.h
 stepmotorctrl_42\stm32f1xx_it.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc_ex.h
 stepmotorctrl_42\stm32f1xx_it.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio.h
 stepmotorctrl_42\stm32f1xx_it.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio_ex.h
@@ -34,5 +34,5 @@ stepmotorctrl_42\stm32f1xx_it.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_h
 stepmotorctrl_42\stm32f1xx_it.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h
 stepmotorctrl_42\stm32f1xx_it.o: ../Core/Inc/stm32f1xx_it.h
 stepmotorctrl_42\stm32f1xx_it.o: ../Core/Inc/usart.h
-stepmotorctrl_42\stm32f1xx_it.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdbool.h
-stepmotorctrl_42\stm32f1xx_it.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\string.h
+stepmotorctrl_42\stm32f1xx_it.o: D:\keil5\ARM\ARM_Compiler_5.06u7\Bin\..\include\stdbool.h
+stepmotorctrl_42\stm32f1xx_it.o: D:\keil5\ARM\ARM_Compiler_5.06u7\Bin\..\include\string.h

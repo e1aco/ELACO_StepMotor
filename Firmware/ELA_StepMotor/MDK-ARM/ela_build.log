@@ -1,0 +1,11 @@
+*** Using Compiler 'V5.06 update 7 (build 960)', folder: 'D:\keil5\ARM\ARM_Compiler_5.06u7\Bin'
+Build target 'ELA_StepMotor'
+compiling elaco_main.c...
+..\ELA_LIB\elaco_main.c(28): warning:  #177-D: function "elaco_rotate_test"  was declared but never referenced
+  static void elaco_rotate_test(void)
+..\ELA_LIB\elaco_main.c: 1 warning, 0 errors
+linking...
+Program Size: Code=22944 RO-data=2468 RW-data=516 ZI-data=4516  
+FromELF: creating hex file...
+"ELA_StepMotor\ELA_StepMotor.axf" - 0 Error(s), 1 Warning(s).
+Build Time Elapsed:  00:00:02

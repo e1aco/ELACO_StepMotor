@@ -23,7 +23,5 @@
 
 void elaco_main(void);
 
-#define ModTest
-
 #endif
 

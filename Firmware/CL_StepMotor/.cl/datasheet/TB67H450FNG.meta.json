@@ -1,0 +1,144 @@
+{
+  "source": "TB67H450FNG.PDF",
+  "engine": "pymupdf_tables",
+  "mode": "technical",
+  "split": "pages",
+  "page_split": true,
+  "chunk_threshold": 4000,
+  "pages": 22,
+  "est_tokens": 9758,
+  "artifacts": [
+    {
+      "page": 1,
+      "file": "TB67H450FNG.ch00.p001.md",
+      "chars": 1726,
+      "token_est": 410
+    },
+    {
+      "page": 2,
+      "file": "TB67H450FNG.ch00.p002.md",
+      "chars": 283,
+      "token_est": 60
+    },
+    {
+      "page": 3,
+      "file": "TB67H450FNG.ch00.p003.md",
+      "chars": 1485,
+      "token_est": 350
+    },
+    {
+      "page": 4,
+      "file": "TB67H450FNG.ch00.p004.md",
+      "chars": 906,
+      "token_est": 213
+    },
+    {
+      "page": 5,
+      "file": "TB67H450FNG.ch00.p005.md",
+      "chars": 1142,
+      "token_est": 263
+    },
+    {
+      "page": 6,
+      "file": "TB67H450FNG.ch00.p006.md",
+      "chars": 2385,
+      "token_est": 550
+    },
+    {
+      "page": 7,
+      "file": "TB67H450FNG.ch00.p007.md",
+      "chars": 1852,
+      "token_est": 417
+    },
+    {
+      "page": 8,
+      "file": "TB67H450FNG.ch00.p008.md",
+      "chars": 1408,
+      "token_est": 318
+    },
+    {
+      "page": 9,
+      "file": "TB67H450FNG.ch00.p009.md",
+      "chars": 1974,
+      "token_est": 456
+    },
+    {
+      "page": 10,
+      "file": "TB67H450FNG.ch00.p010.md",
+      "chars": 728,
+      "token_est": 179
+    },
+    {
+      "page": 11,
+      "file": "TB67H450FNG.ch00.p011.md",
+      "chars": 4049,
+      "token_est": 1010
+    },
+    {
+      "page": 12,
+      "file": "TB67H450FNG.ch00.p012.md",
+      "chars": 3054,
+      "token_est": 756
+    },
+    {
+      "page": 13,
+      "file": "TB67H450FNG.ch00.p013.md",
+      "chars": 3062,
+      "token_est": 768
+    },
+    {
+      "page": 14,
+      "file": "TB67H450FNG.ch00.p014.md",
+      "chars": 1489,
+      "token_est": 376
+    },
+    {
+      "page": 15,
+      "file": "TB67H450FNG.ch00.p015.md",
+      "chars": 2042,
+      "token_est": 479
+    },
+    {
+      "page": 16,
+      "file": "TB67H450FNG.ch00.p016.md",
+      "chars": 338,
+      "token_est": 81
+    },
+    {
+      "page": 17,
+      "file": "TB67H450FNG.ch00.p017.md",
+      "chars": 175,
+      "token_est": 30
+    },
+    {
+      "page": 18,
+      "file": "TB67H450FNG.ch00.p018.md",
+      "chars": 233,
+      "token_est": 25
+    },
+    {
+      "page": 19,
+      "file": "TB67H450FNG.ch00.p019.md",
+      "chars": 3479,
+      "token_est": 877
+    },
+    {
+      "page": 20,
+      "file": "TB67H450FNG.ch00.p020.md",
+      "chars": 2170,
+      "token_est": 548
+    },
+    {
+      "page": 21,
+      "file": "TB67H450FNG.ch00.p021.md",
+      "chars": 527,
+      "token_est": 129
+    },
+    {
+      "page": 22,
+      "file": "TB67H450FNG.ch00.p022.md",
+      "chars": 5754,
+      "token_est": 1458
+    }
+  ]
+}

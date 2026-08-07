@@ -1,0 +1,192 @@
+{
+  "source": "MT6816CT-ACD.PDF",
+  "engine": "pymupdf_tables",
+  "mode": "technical",
+  "split": "pages",
+  "page_split": true,
+  "chunk_threshold": 4000,
+  "pages": 30,
+  "est_tokens": 14720,
+  "artifacts": [
+    {
+      "page": 1,
+      "file": "MT6816CT-ACD.ch00.p001.md",
+      "chars": 1742,
+      "token_est": 807
+    },
+    {
+      "page": 2,
+      "file": "MT6816CT-ACD.ch00.p002.md",
+      "chars": 3464,
+      "token_est": 929
+    },
+    {
+      "page": 3,
+      "file": "MT6816CT-ACD.ch00.p003.md",
+      "chars": 1166,
+      "token_est": 423
+    },
+    {
+      "page": 4,
+      "file": "MT6816CT-ACD.ch00.p004.md",
+      "chars": 2487,
+      "token_est": 822
+    },
+    {
+      "page": 5,
+      "file": "MT6816CT-ACD.ch00.p005.md",
+      "chars": 1564,
+      "token_est": 662
+    },
+    {
+      "page": 6,
+      "file": "MT6816CT-ACD.ch00.p006.md",
+      "chars": 1556,
+      "token_est": 582
+    },
+    {
+      "page": 7,
+      "file": "MT6816CT-ACD.ch00.p007.md",
+      "chars": 3680,
+      "token_est": 1129
+    },
+    {
+      "page": 8,
+      "file": "MT6816CT-ACD.ch00.p008.md",
+      "chars": 2436,
+      "token_est": 881
+    },
+    {
+      "page": 9,
+      "file": "MT6816CT-ACD.ch00.p009.md",
+      "chars": 1514,
+      "token_est": 570
+    },
+    {
+      "page": 10,
+      "file": "MT6816CT-ACD.ch00.p010.md",
+      "chars": 1270,
+      "token_est": 456
+    },
+    {
+      "page": 11,
+      "file": "MT6816CT-ACD.ch00.p011.md",
+      "chars": 920,
+      "token_est": 266
+    },
+    {
+      "page": 12,
+      "file": "MT6816CT-ACD.ch00.p012.md",
+      "chars": 1073,
+      "token_est": 447
+    },
+    {
+      "page": 13,
+      "file": "MT6816CT-ACD.ch00.p013.md",
+      "chars": 658,
+      "token_est": 255
+    },
+    {
+      "page": 14,
+      "file": "MT6816CT-ACD.ch00.p014.md",
+      "chars": 870,
+      "token_est": 281
+    },
+    {
+      "page": 15,
+      "file": "MT6816CT-ACD.ch00.p015.md",
+      "chars": 480,
+      "token_est": 185
+    },
+    {
+      "page": 16,
+      "file": "MT6816CT-ACD.ch00.p016.md",
+      "chars": 1836,
+      "token_est": 568
+    },
+    {
+      "page": 17,
+      "file": "MT6816CT-ACD.ch00.p017.md",
+      "chars": 951,
+      "token_est": 300
+    },
+    {
+      "page": 18,
+      "file": "MT6816CT-ACD.ch00.p018.md",
+      "chars": 1397,
+      "token_est": 516
+    },
+    {
+      "page": 19,
+      "file": "MT6816CT-ACD.ch00.p019.md",
+      "chars": 1269,
+      "token_est": 376
+    },
+    {
+      "page": 20,
+      "file": "MT6816CT-ACD.ch00.p020.md",
+      "chars": 1592,
+      "token_est": 582
+    },
+    {
+      "page": 21,
+      "file": "MT6816CT-ACD.ch00.p021.md",
+      "chars": 1556,
+      "token_est": 544
+    },
+    {
+      "page": 22,
+      "file": "MT6816CT-ACD.ch00.p022.md",
+      "chars": 1268,
+      "token_est": 449
+    },
+    {
+      "page": 23,
+      "file": "MT6816CT-ACD.ch00.p023.md",
+      "chars": 1345,
+      "token_est": 447
+    },
+    {
+      "page": 24,
+      "file": "MT6816CT-ACD.ch00.p024.md",
+      "chars": 312,
+      "token_est": 109
+    },
+    {
+      "page": 25,
+      "file": "MT6816CT-ACD.ch00.p025.md",
+      "chars": 770,
+      "token_est": 328
+    },
+    {
+      "page": 26,
+      "file": "MT6816CT-ACD.ch00.p026.md",
+      "chars": 873,
+      "token_est": 336
+    },
+    {
+      "page": 27,
+      "file": "MT6816CT-ACD.ch00.p027.md",
+      "chars": 538,
+      "token_est": 167
+    },
+    {
+      "page": 28,
+      "file": "MT6816CT-ACD.ch00.p028.md",
+      "chars": 1464,
+      "token_est": 417
+    },
+    {
+      "page": 29,
+      "file": "MT6816CT-ACD.ch00.p029.md",
+      "chars": 810,
+      "token_est": 362
+    },
+    {
+      "page": 30,
+      "file": "MT6816CT-ACD.ch00.p030.md",
+      "chars": 1439,
+      "token_est": 519
+    }
+  ]
+}

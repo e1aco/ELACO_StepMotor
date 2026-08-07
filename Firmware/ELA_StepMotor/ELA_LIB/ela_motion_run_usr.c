@@ -217,13 +217,6 @@ void ela_motion_run_proc(void)
     int max_delta;
     unsigned int cur_ma;
 
-    /* 4kHz 控制分频：每 5 个 20kHz tick 控制一次 */
-    if (++s_ctrl_tick < MOTION_RUN_CTRL_DIV)
-    {
-        return;
-    }
-    s_ctrl_tick = 0;
-
     /* 从未启动过目标（上电未触发）：不开环 */
     if (!s_running && !s_arrived)
     {

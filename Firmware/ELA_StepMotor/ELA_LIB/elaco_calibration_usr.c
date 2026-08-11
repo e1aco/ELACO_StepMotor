@@ -318,6 +318,24 @@ static void calibration_generate_table(void)
     ela_stockfile_usr_erase(&g_stockfile_cali_st);
     ela_stockfile_usr_seq_write_begin(&g_stockfile_cali_st);
 
+    /* 预计算环绕段（jump 点）：环绕低侧值 avg[jump]（≈0），环绕高侧
+     * 值 avg[jump+1]（≈16384）。环绕段高侧终点（enc 16383）的微步，
+     * 用于低侧起点连续化（消除回绕处表跳变，0° runaway 根因） */
+    int jp = (int)g_calibra_st.jump_pot;
+    int e_hi_wrap = g_calibra_st.avg_fr_data[jp];
+    int e_lo_wrap = g_calibra_st.avg_fr_data[
+        cyclecal_mod(jp + 1, WHOLESTEPLAP)];
+    int dec_wrap = cyclecal_diff(e_lo_wrap, e_hi_wrap, ENC_RESOLUTION);
+    if (dec_wrap <= 0) dec_wrap += ENC_RESOLUTION;
+    unsigned int m_wrap = cyclecal_mod(
+        g_calibra_st.reset_microstep
+        + (unsigned int)(jp * SOFT_DIVIDE), MICROSTEPLAP);
+    int d_wrap_end = cyclecal_diff(
+        ENC_RESOLUTION - 1, e_lo_wrap, ENC_RESOLUTION);
+    unsigned int m_wrap_end = cyclecal_mod(
+        m_wrap + (unsigned int)((d_wrap_end * SOFT_DIVIDE) / dec_wrap),
+        MICROSTEPLAP);
+
     /* 从环绕段 jump 起，按编码器升序遍历 200+1 个整步段。
      * 环绕段拆两半：先写起点 e=e_hi，其余高侧留到最后补写，
      * 保证整体严格按 encoder 值 0..16383 递增写表 */
@@ -358,7 +376,10 @@ static void calibration_generate_table(void)
         }
         else if (WHOLESTEPLAP == off)
         {
-            /* 环绕段高侧：编码器 e_lo+1..16383（约 16383 侧） */
+            /* 环绕段高侧：编码器 e_lo+1..16383（约 16383 侧）。
+             * 该段 e_hi 是环绕低侧值（≈0），不能作高侧插值基准。
+             * d 须相对 e_lo（高侧本段编码器低界）计算，否则斜率
+             * 错位（实测 enc 16350..16383 斜率仅 -1.06 vs 正常 -3.125） */
             e_start = e_lo + 1;
             e_end = ENC_RESOLUTION - 1;
         }
@@ -372,12 +393,32 @@ static void calibration_generate_table(void)
         /* 按编码器升序写入，保证表索引 == 编码器值 */
         for (int e = e_start; e <= e_end; e++)
         {
-            /* 段内距段起点沿递减方向的计数 */
-            int d = cyclecal_diff(e, e_hi, ENC_RESOLUTION);
-            unsigned int val = cyclecal_mod(
-                m_hi
-                + (unsigned int)((d * SOFT_DIVIDE) / dec),
-                MICROSTEPLAP);
+            unsigned int val;
+
+            if (0 == off && e_end > 0)
+            {
+                /* 环绕段低侧连续化：enc 0 起点 = 环绕高侧终点
+                 * (enc 16383) 微步 + 1 计数微步（消除回绕处表跳变，
+                 * 0° runaway 根因），线性过渡到环绕点微步 m_hi */
+                int val0 = (int)cyclecal_mod(
+                    m_wrap_end + 3, MICROSTEPLAP);  /* 1 计数≈3 微步 */
+                int delta = ((int)m_hi - val0) * e / e_end;
+                val = cyclecal_mod((unsigned int)(val0 + delta),
+                                   MICROSTEPLAP);
+            }
+            else
+            {
+                /* 段内距段起点沿递减方向的计数。
+                 * 环绕段高侧（off==WHOLESTEPLAP）以 e_lo 为基准（该段
+                 * 编码器低界），其余段以 e_hi 为基准（段内编码器高界） */
+                int base = (WHOLESTEPLAP == off) ? e_lo : e_hi;
+                int d = cyclecal_diff(e, base, ENC_RESOLUTION);
+                val = cyclecal_mod(
+                    m_hi
+                    + (unsigned int)((d * SOFT_DIVIDE) / dec),
+                    MICROSTEPLAP);
+            }
+
             ela_stockfile_usr_seq_write_next(
                 &g_stockfile_cali_st, (unsigned short)val);
             result_num++;
@@ -470,7 +511,13 @@ void elaco_calibration_table_generate_proc(void)
             break;
 
         case CALI_STEP_COLLECT:
+            break;
+
         case CALI_STEP_DONE:
+            /* 校准结束：回到 IDLE，供上电/主循环状态机进入正式运行态。
+             * 此前 DONE 分支直接 break 导致 cali_step 永久卡 DONE，
+             * demo/正式模式永不启动（表现为 tgt=0 stepT=0 全默认值） */
+            g_calibra_st.cali_step = CALI_STEP_IDLE;
             break;
 
         default:

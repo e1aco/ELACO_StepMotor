@@ -19,14 +19,19 @@
 #define MOTION_RUN_CTRL_DIV      1     /* 每个 20kHz tick 控制一次 = 20kHz */
 #define MOTION_RUN_KP_SHIFT      6     /* Kp = 1/64 */
 #define MOTION_RUN_MAX_DELTA     4     /* 每控制周期最大微步（查表目标逼近），复刻 run_pid 成功配置 */
-#define MOTION_RUN_HOLD_MAX_DELTA 2    /* 到位保持最大微步（I+D 同款控制器，限幅调温和） */
+#define MOTION_RUN_HOLD_MAX_DELTA 32   /* 到位保持最大微步（err 积分补偿静摩擦，磁场可偏 32 微步≈22.5°电角） */
 #define MOTION_RUN_ERR_ACC_MAX   (MOTION_RUN_MAX_DELTA << MOTION_RUN_KP_SHIFT) /* ±256 防 windup */
-#define MOTION_RUN_SLOW_ERR      64    /* 接近目标（编码器计数）时降速至 ±1 */
+#define MOTION_RUN_SLOW_ERR      128   /* 接近目标（编码器计数）时降速至 ±1 */
 #define MOTION_RUN_DEADBAND      8     /* 到位死区（编码器计数），兼顾回绕边界摆动与定位精度 */
+#define MOTION_RUN_HOLD_HYST     14    /* 保持态滞回（编码器计数）：|err|<HYST 磁场回中，≥HYST 才积分。滞回>死区防边缘抖动积分饱和 */
 #define MOTION_RUN_CONFIRM       3     /* 连续带内次数 */
 #define MOTION_RUN_ENC_JUMP      256   /* 单 50µs tick 编码器最大合法跳变，超限视为坏值（满速仅 ~2） */
-#define MOTION_RUN_HOLD_MA       2000
-#define MOTION_RUN_DRIVE_MA      2000
+#define MOTION_RUN_ENC_BAD_MAX   10    /* 编码器连续跳变容忍 tick 数：10 tick(500µs) 内持续跳变才接受为新值 */
+#define MOTION_RUN_ERR_DELTA_MAX 60    /* 保持态 err 单 tick 突变上限（编码器计数）：保持态 err 应 ±20 内，突变>60 视为坏读冻结，防触发 REENTER 重入放大成 runaway。回绕边突变(±33)不超 */
+#define MOTION_RUN_HOLD_MA       1700
+#define MOTION_RUN_DRIVE_MA      1500
+#define MOTION_RUN_REENTER_ERR   80    /* 到位保持中 err 超此阈值（编码器计数）→ 撤销到位重入运行态逼近。提高避免 0°/270° 保持力不足的小 err(±20) 触发重入放大成 runaway */
+#define MOTION_RUN_ARRIVE_VEL    2     /* 到位判定速度门（编码器计数/50µs tick）：超过即视为惯性冲过死区，不判到位 */
 
 static const unsigned short s_demo_targets[MOTION_RUN_TARGET_NUM] = {
     MOTION_RUN_TGT_0DEG, MOTION_RUN_TGT_90DEG,
@@ -43,10 +48,19 @@ static volatile unsigned char s_running = 0;
 static volatile unsigned char s_arrived = 0;
 static volatile unsigned char s_inband_cnt = 0;
 
+/* 触发式诊断缓冲：记录最近 32 tick 的 enc/err/cur，失控(hold→running)瞬间打印 */
+#define DBG_RING 32
+static unsigned short s_dbg_enc[DBG_RING];
+static int s_dbg_err[DBG_RING];
+static int s_dbg_cur[DBG_RING];
+static unsigned char s_dbg_idx = 0;
+static unsigned char s_dbg_cnt = 0;
+
 /* 闭环控制器状态（误差累加器 + 速度阻尼） */
 static volatile int s_err_acc = 0;
 static volatile int s_ctrl_tick = 0;
 static volatile unsigned short s_prev_enc = 0;
+static volatile int s_err_prev = 0;      /* 保持态 err 突变抑制基准 */
 
 /* 演示索引 */
 static unsigned char s_demo_idx = 0;
@@ -72,6 +86,7 @@ static unsigned short motion_run_read_median(void)
 {
     static unsigned short last_valid = 0;
     static unsigned char have_valid = 0;
+    static unsigned char bad_cnt = 0;
     unsigned short raw;
     int jump;
 
@@ -84,10 +99,19 @@ static unsigned short motion_run_read_median(void)
         if (jump > MOTION_RUN_ENC_JUMP
             || jump < -MOTION_RUN_ENC_JUMP)
         {
-            return last_valid;
+            /* 偶发跳变（MT6816 磁场读数瞬时错，parity 拦不住）：
+             * 连续 MOTION_RUN_ENC_BAD_MAX tick 跳变才接受新值，
+             * 否则沿用上次有效值，过滤单次/连续几次坏读 */
+            if (bad_cnt < MOTION_RUN_ENC_BAD_MAX)
+            {
+                bad_cnt++;
+                return last_valid;
+            }
+            /* 持续跳变 → 可能是真实快速运动，接受 */
         }
     }
 
+    bad_cnt = 0;
     last_valid = raw;
     have_valid = 1;
     return raw;
@@ -197,6 +221,7 @@ void ela_motion_run_goto_target(unsigned short target)
     s_inband_cnt = 0;
     s_err_acc = 0;
     s_prev_enc = enc0;
+    s_err_prev = 0;
     s_arrived = 0;
     s_running = 1;
 }
@@ -234,49 +259,144 @@ void ela_motion_run_proc(void)
     vel = motion_run_angle_delta(enc, s_prev_enc);
     s_prev_enc = enc;
 
+    /* 触发式诊断缓冲：记录 enc/err/cur 环形缓冲 */
+    s_dbg_enc[s_dbg_idx] = enc;
+    s_dbg_err[s_dbg_idx] = err;
+    s_dbg_cur[s_dbg_idx] = s_cur_step;
+    s_dbg_idx = (s_dbg_idx + 1) % DBG_RING;
+    if (s_dbg_cnt < DBG_RING) s_dbg_cnt++;
+
     if (s_arrived)
     {
-        /* 到位保持：磁场基准锚定到校准表磁点 table[enc]（当前编码器
-         * 位置对应的零转矩微步）。s_cur_step 原为自由积分器，在 0°/270°
-         * 会把磁场停在磁点之间 → 误差持续饱和 → 20kHz 满圈扫掠极限环
-         * （enc ±1500 横跳、cur 满圈横扫）；锚定后磁场始终贴住磁点，
-         * 仅叠加 ±2 微步比例校正（增益 1/4），带外立即生效温和拉回 */
-        if (err < MOTION_RUN_DEADBAND && err > -MOTION_RUN_DEADBAND)
+        /* 保持态 err 突变抑制：保持态 err 应极小（±20 内），若某 tick 突变
+         * 超限（编码器坏读漏过 read_median），冻结 err 沿用上次值，防止
+         * 积分器放大成 runaway（0°/270° 偶发失控根因）。运行态 GOTO 逼近
+         * err 大是正常的，不做此抑制 */
+        if (err - s_err_prev > MOTION_RUN_ERR_DELTA_MAX
+            || err - s_err_prev < -MOTION_RUN_ERR_DELTA_MAX)
         {
+            err = s_err_prev;
+        }
+    }
+    s_err_prev = err;
+
+    if (s_arrived)
+    {
+        /* 0° 回绕边特判：校准表 table[0] 基准与真 0° 磁点有偏移（实测
+         * stepT 26 vs 真磁点 220），保持态回中 stepT 会把转子拉偏 62 计数
+         * → 反复重入 runaway。改为保留到位时磁场 s_cur_step（err 微调），
+         * 不重置到错误的 stepT */
+        if (s_target_enc == 0 || s_target_enc > (ENC_RESOLUTION - 200))
+        {
+            if (err > MOTION_RUN_REENTER_ERR || err < -MOTION_RUN_REENTER_ERR)
+            {
+                s_arrived = 0;
+                s_running = 1;
+                s_err_acc = 0;
+                s_inband_cnt = 0;
+            }
+            else if (err < MOTION_RUN_DEADBAND && err > -MOTION_RUN_DEADBAND)
+            {
+                s_err_acc = 0;
+                ela_tb67h450_set_foc_current(
+                    (unsigned int)s_cur_step, MOTION_RUN_HOLD_MA);
+                return;
+            }
+            else
+            {
+                s_err_acc += err;
+                if (s_err_acc > MOTION_RUN_ERR_ACC_MAX)
+                    s_err_acc = MOTION_RUN_ERR_ACC_MAX;
+                else if (s_err_acc < -MOTION_RUN_ERR_ACC_MAX)
+                    s_err_acc = -MOTION_RUN_ERR_ACC_MAX;
+
+                int c = (s_err_acc >> MOTION_RUN_KP_SHIFT) * 2;
+                if (c > MOTION_RUN_HOLD_MAX_DELTA) c = MOTION_RUN_HOLD_MAX_DELTA;
+                else if (c < -MOTION_RUN_HOLD_MAX_DELTA) c = -MOTION_RUN_HOLD_MAX_DELTA;
+                s_cur_step -= c;
+                if (s_cur_step < 0) s_cur_step += MICROSTEPLAP;
+                else if (s_cur_step >= MICROSTEPLAP) s_cur_step -= MICROSTEPLAP;
+                ela_tb67h450_set_foc_current(
+                    (unsigned int)s_cur_step, MOTION_RUN_HOLD_MA);
+                return;
+            }
+        }
+
+        /* 到位保持：磁场以目标磁点 stepT 为基准，err 积分补偿静摩擦。
+         * 旧实现锚定 table[enc]（当前编码器零转矩点）+ clamp ±8 微步 →
+         * 磁场停在不平衡位置，稳态 err 残留。新实现：
+         *  - 死区内（|err|<±8）：磁场回中 stepT（零转矩），达标保持；
+         *  - 死区外：err 积分（I 项补偿静摩擦）+ 限速逼近，把编码器拉回目标。
+         * 大漂移重入：回绕边漂移（0° 跨 16384 等，err 可达数百计数）远超保持
+         * clamp 能力，撤销到位回运行态用完整积分器逼近（无 ±24 限制） */
+        if (err > MOTION_RUN_REENTER_ERR || err < -MOTION_RUN_REENTER_ERR)
+        {
+            /* 触发诊断：打印最近 32 tick 的 enc/err/cur，定位失控源头 */
+            unsigned char i = (s_dbg_idx + DBG_RING - s_dbg_cnt) % DBG_RING;
+            for (unsigned char k = 0; k < s_dbg_cnt; k++)
+            {
+                printf("[DBG] %u: enc=%u err=%d cur=%d\r\n",
+                       k, s_dbg_enc[i], s_dbg_err[i], s_dbg_cur[i]);
+                i = (i + 1) % DBG_RING;
+            }
+            s_arrived = 0;
+            s_running = 1;
             s_err_acc = 0;
-            s_cur_step = (int)g_cali_table[enc];
+            s_inband_cnt = 0;
+        }
+        else if (err < MOTION_RUN_HOLD_HYST && err > -MOTION_RUN_HOLD_HYST)
+        {
+            /* 死区（含滞回）：|err|<HYST 磁场回中 stepT（零转矩保持）。
+             * 用 HYST(14) > DEADBAND(8) 的滞回避免死区边缘 err 抖动反复
+             * 触发积分分支 → 积分器饱和 → runaway */
+            s_err_acc = 0;
+            s_cur_step = (int)s_target_step;
             ela_tb67h450_set_foc_current(
                 (unsigned int)s_cur_step, MOTION_RUN_HOLD_MA);
             return;
         }
+        else
+        {
+            s_err_acc += err;
+            if (s_err_acc > MOTION_RUN_ERR_ACC_MAX / 2)
+            {
+                s_err_acc = MOTION_RUN_ERR_ACC_MAX / 2;
+            }
+            else if (s_err_acc < -(MOTION_RUN_ERR_ACC_MAX / 2))
+            {
+                s_err_acc = -(MOTION_RUN_ERR_ACC_MAX / 2);
+            }
 
-        cmd = err >> 2;
-        if (cmd > MOTION_RUN_HOLD_MAX_DELTA)
-        {
-            cmd = MOTION_RUN_HOLD_MAX_DELTA;
+            cmd = (s_err_acc >> MOTION_RUN_KP_SHIFT) * 2;
+            if (cmd > MOTION_RUN_HOLD_MAX_DELTA)
+            {
+                cmd = MOTION_RUN_HOLD_MAX_DELTA;
+            }
+            else if (cmd < -MOTION_RUN_HOLD_MAX_DELTA)
+            {
+                cmd = -MOTION_RUN_HOLD_MAX_DELTA;
+            }
+            s_cur_step = (int)s_target_step - cmd;
+            if (s_cur_step < 0)
+            {
+                s_cur_step += MICROSTEPLAP;
+            }
+            else if (s_cur_step >= MICROSTEPLAP)
+            {
+                s_cur_step -= MICROSTEPLAP;
+            }
+            ela_tb67h450_set_foc_current(
+                (unsigned int)s_cur_step, MOTION_RUN_HOLD_MA);
+            return;
         }
-        else if (cmd < -MOTION_RUN_HOLD_MAX_DELTA)
-        {
-            cmd = -MOTION_RUN_HOLD_MAX_DELTA;
-        }
-        s_cur_step = (int)g_cali_table[enc] - cmd;
-        if (s_cur_step < 0)
-        {
-            s_cur_step += MICROSTEPLAP;
-        }
-        else if (s_cur_step >= MICROSTEPLAP)
-        {
-            s_cur_step -= MICROSTEPLAP;
-        }
-        ela_tb67h450_set_foc_current(
-            (unsigned int)s_cur_step, MOTION_RUN_HOLD_MA);
-        return;
     }
     else
     {
-        /* 到位判定：带内（|err|<±4）连续 CONFIRM 次。
-         * 接近目标已降速至 ±1，扫过死区速度极低，无需速度门 */
-        if (err < MOTION_RUN_DEADBAND && err > -MOTION_RUN_DEADBAND)
+        /* 到位判定：带内（|err|<±8）且速度足够低（|vel|≤2 计数/tick）连续 CONFIRM 次。
+         * 加 vel 速度门：编码器惯性冲过死区时 err 短暂带内但 vel 大，不判到位，
+         * 待转子真正停住（vel≈0）再切保持，避免到位后惯性漂移触发重入振荡 */
+        if (err < MOTION_RUN_DEADBAND && err > -MOTION_RUN_DEADBAND
+            && vel <= MOTION_RUN_ARRIVE_VEL && vel >= -MOTION_RUN_ARRIVE_VEL)
         {
             if (s_inband_cnt < MOTION_RUN_CONFIRM)
             {

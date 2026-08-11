@@ -1,0 +1,74 @@
+{
+  "source": "MT6816CT-ACD.PDF",
+  "engine": "pypdf",
+  "mode": "technical",
+  "split": "heading",
+  "page_split": true,
+  "chunk_threshold": 4000,
+  "pages": 30,
+  "est_tokens": 5895,
+  "artifacts": [
+    {
+      "pages": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "file": "MT6816CT-ACD_ch00_front.md",
+      "chars": 7738,
+      "token_est": 2676,
+      "title": null
+    },
+    {
+      "pages": [
+        10
+      ],
+      "file": "MT6816CT-ACD_ch07_7_sck_sck_z.md",
+      "chars": 532,
+      "token_est": 194,
+      "title": "7 SCK SCK Z W"
+    },
+    {
+      "pages": [
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17
+      ],
+      "file": "MT6816CT-ACD_ch05_5_a_u.md",
+      "chars": 2702,
+      "token_est": 921,
+      "title": "5 A/U"
+    },
+    {
+      "pages": [
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30
+      ],
+      "file": "MT6816CT-ACD_ch08_8_clock.md",
+      "chars": 6057,
+      "token_est": 2104,
+      "title": "8 Clock"
+    }
+  ]
+}

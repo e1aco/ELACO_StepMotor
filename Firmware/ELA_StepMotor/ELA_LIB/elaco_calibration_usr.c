@@ -312,117 +312,44 @@ static void calibration_print_data(void)
  ********/
 static void calibration_generate_table(void)
 {
-    int jump = g_calibra_st.jump_pot;
     unsigned int result_num = 0;
 
     ela_stockfile_usr_erase(&g_stockfile_cali_st);
     ela_stockfile_usr_seq_write_begin(&g_stockfile_cali_st);
 
-    /* 预计算环绕段（jump 点）：环绕低侧值 avg[jump]（≈0），环绕高侧
-     * 值 avg[jump+1]（≈16384）。环绕段高侧终点（enc 16383）的微步，
-     * 用于低侧起点连续化（消除回绕处表跳变，0° runaway 根因） */
-    int jp = (int)g_calibra_st.jump_pot;
-    int e_hi_wrap = g_calibra_st.avg_fr_data[jp];
-    int e_lo_wrap = g_calibra_st.avg_fr_data[
-        cyclecal_mod(jp + 1, WHOLESTEPLAP)];
-    int dec_wrap = cyclecal_diff(e_lo_wrap, e_hi_wrap, ENC_RESOLUTION);
-    if (dec_wrap <= 0) dec_wrap += ENC_RESOLUTION;
-    unsigned int m_wrap = cyclecal_mod(
-        g_calibra_st.reset_microstep
-        + (unsigned int)(jp * SOFT_DIVIDE), MICROSTEPLAP);
-    int d_wrap_end = cyclecal_diff(
-        ENC_RESOLUTION - 1, e_lo_wrap, ENC_RESOLUTION);
-    unsigned int m_wrap_end = cyclecal_mod(
-        m_wrap + (unsigned int)((d_wrap_end * SOFT_DIVIDE) / dec_wrap),
-        MICROSTEPLAP);
-
-    /* 从环绕段 jump 起，按编码器升序遍历 200+1 个整步段。
-     * 环绕段拆两半：先写起点 e=e_hi，其余高侧留到最后补写，
-     * 保证整体严格按 encoder 值 0..16383 递增写表 */
-    for (int off = 0; off <= WHOLESTEPLAP; off++)
+    /* 逐编码器生成：对每个编码器 e=0..16383，找覆盖它的校准段 i
+     * （avg[i]→avg[i+1]，编码器降序），线性插值微步。
+     * 段低 avg[i+1] ↔ (i+1)*256，段高 avg[i] ↔ i*256（校准第 i 整步微步）。
+     * 跨环绕段（avg[i] 低≈0、avg[i+1] 高≈16384）经 cyclecal_diff 回绕，
+     * 使编码器 0 的微步确定（消除旧实现 0° 磁点偏移/随机） */
+    for (int e = 0; e < ENC_RESOLUTION; e++)
     {
-        /* jump - off 可为负，须先加回一圈再取模，否则负值经
-         * cyclecal_mod(unsigned) 隐式转换得到巨大数，k 错位
-         * （如 -1 % 200 → 95 而非 199），导致表后半圈偏移 */
-        int k = jump - off;
+        unsigned int micro = 0;
 
-        if (k < 0)
+        for (int i = 0; i < WHOLESTEPLAP; i++)
         {
-            k += WHOLESTEPLAP;
-        }
-        int e_hi = g_calibra_st.avg_fr_data[k];
-        int e_lo = g_calibra_st.avg_fr_data[
-            cyclecal_mod(k + 1, WHOLESTEPLAP)];
-        int dec = cyclecal_diff(e_lo, e_hi, ENC_RESOLUTION);
-        unsigned int m_hi;
-        int e_start, e_end;
+            int e_hi = g_calibra_st.avg_fr_data[i];
+            int e_lo = g_calibra_st.avg_fr_data[i + 1];
+            int span = cyclecal_diff(e_lo, e_hi, ENC_RESOLUTION);
+            if (span <= 0) span += ENC_RESOLUTION;
 
-        if (dec <= 0)
-        {
-            dec += ENC_RESOLUTION;
-        }
+            /* e 距段低 avg[i+1] 的升序偏移（跨环绕回绕到 [0, span]） */
+            int d = cyclecal_diff(e_lo, e, ENC_RESOLUTION);
+            if (d < 0) d += ENC_RESOLUTION;
 
-        /* 段起点微步 = 环绕段基准 + 整步号 * 每整步微步 */
-        m_hi = cyclecal_mod(
-            g_calibra_st.reset_microstep
-            + (unsigned int)(k * SOFT_DIVIDE),
-            MICROSTEPLAP);
-
-        if (0 == off)
-        {
-            /* 环绕段低侧：编码器 0..e_hi（约 0），微步从段起点内插 */
-            e_start = 0;
-            e_end = e_hi;
-        }
-        else if (WHOLESTEPLAP == off)
-        {
-            /* 环绕段高侧：编码器 e_lo+1..16383（约 16383 侧）。
-             * 该段 e_hi 是环绕低侧值（≈0），不能作高侧插值基准。
-             * d 须相对 e_lo（高侧本段编码器低界）计算，否则斜率
-             * 错位（实测 enc 16350..16383 斜率仅 -1.06 vs 正常 -3.125） */
-            e_start = e_lo + 1;
-            e_end = ENC_RESOLUTION - 1;
-        }
-        else
-        {
-            /* 整段：编码器 e_lo+1..e_hi，升序 */
-            e_start = e_lo + 1;
-            e_end = e_hi;
-        }
-
-        /* 按编码器升序写入，保证表索引 == 编码器值 */
-        for (int e = e_start; e <= e_end; e++)
-        {
-            unsigned int val;
-
-            if (0 == off && e_end > 0)
+            if (d <= span)
             {
-                /* 环绕段低侧连续化：enc 0 起点 = 环绕高侧终点
-                 * (enc 16383) 微步 + 1 计数微步（消除回绕处表跳变，
-                 * 0° runaway 根因），线性过渡到环绕点微步 m_hi */
-                int val0 = (int)cyclecal_mod(
-                    m_wrap_end + 3, MICROSTEPLAP);  /* 1 计数≈3 微步 */
-                int delta = ((int)m_hi - val0) * e / e_end;
-                val = cyclecal_mod((unsigned int)(val0 + delta),
-                                   MICROSTEPLAP);
-            }
-            else
-            {
-                /* 段内距段起点沿递减方向的计数。
-                 * 环绕段高侧（off==WHOLESTEPLAP）以 e_lo 为基准（该段
-                 * 编码器低界），其余段以 e_hi 为基准（段内编码器高界） */
-                int base = (WHOLESTEPLAP == off) ? e_lo : e_hi;
-                int d = cyclecal_diff(e, base, ENC_RESOLUTION);
-                val = cyclecal_mod(
-                    m_hi
-                    + (unsigned int)((d * SOFT_DIVIDE) / dec),
+                micro = cyclecal_mod(
+                    (unsigned int)((i + 1) * SOFT_DIVIDE)
+                    - (unsigned int)((d * SOFT_DIVIDE) / span),
                     MICROSTEPLAP);
+                break;
             }
-
-            ela_stockfile_usr_seq_write_next(
-                &g_stockfile_cali_st, (unsigned short)val);
-            result_num++;
         }
+
+        ela_stockfile_usr_seq_write_next(
+            &g_stockfile_cali_st, (unsigned short)micro);
+        result_num++;
     }
 
     ela_stockfile_usr_seq_write_end(&g_stockfile_cali_st);
@@ -431,6 +358,56 @@ static void calibration_generate_table(void)
         g_calibra_st.calitable_flag = true;
     else
         g_calibra_st.data_err = 4;
+}
+
+/********
+ * @ 说明: 0° 磁点修正。校准表 table[0] 基于校准环绕段 avg（随校准起点
+ *         随机），与真 0° 磁点有偏移（实测磁场停 table[0] 时编码器 ≠0）。
+ *         修正方法：磁场停在 table[0]，读编码器 e0，真磁点 m0=table[0]+e0*3
+ *         （负斜率 3.125≈3），全表平移 shift 重写 Flash，使 table[0]=真磁点。
+ *         平移不改表斜率 → 90/180/270 闭环到位不受影响（编码器目标不变）
+ ********/
+static void calibration_zero_offset_fix(void)
+{
+    static uint16_t tmp[ENC_RESOLUTION];
+    int e0 = 0, m0, shift, i;
+
+    ela_tb67h450_set_foc_current(g_cali_table[0], 2000);
+    HAL_Delay(300);                          /* 磁场停稳，转子到位 */
+
+    for (i = 0; i < 8; i++)                  /* 多次读取取环绕平均 */
+    {
+        ela_mt6816_usr_read_angle();
+        e0 = cyclecal_avg_two(
+            (unsigned short)e0, g_mt6816_st.raw_angle,
+            ENC_RESOLUTION);
+        HAL_Delay(10);
+    }
+    if (e0 > 8192) e0 -= ENC_RESOLUTION;     /* 0°±两侧 */
+
+    if (e0 < -4000 || e0 > 4000)
+    {
+        printf("[CALI] zero fix skip: tbl0=%u e0=%d (|e0|>4000)\r\n",
+               g_cali_table[0], e0);
+        return;                              /* 偏离 0° 过远，不修 */
+    }
+
+    m0 = (int)cyclecal_mod((int)g_cali_table[0] + e0 * 3, MICROSTEPLAP);
+    shift = cyclecal_diff((int)g_cali_table[0], m0, MICROSTEPLAP);  /* m0 - table[0] */
+    if (shift == 0)
+    {
+        return;
+    }
+
+    ela_stockfile_usr_read(&g_stockfile_cali_st, tmp, ENC_RESOLUTION);
+    for (i = 0; i < ENC_RESOLUTION; i++)
+    {
+        tmp[i] = (uint16_t)cyclecal_mod((int)tmp[i] + shift, MICROSTEPLAP);
+    }
+    ela_stockfile_usr_erase(&g_stockfile_cali_st);
+    ela_stockfile_usr_write(&g_stockfile_cali_st, tmp, ENC_RESOLUTION);
+    printf("[CALI] zero fix: tbl0=%u e0=%d m0=%d shift=%d\r\n",
+           g_cali_table[0], e0, m0, shift);
 }
 
 /* elaco_calibration hlp end */
@@ -507,6 +484,7 @@ void elaco_calibration_table_generate_proc(void)
 
         case CALI_STEP_GENERATE:
             calibration_generate_table();
+            calibration_zero_offset_fix();
             g_calibra_st.cali_step = CALI_STEP_DONE;
             break;
 

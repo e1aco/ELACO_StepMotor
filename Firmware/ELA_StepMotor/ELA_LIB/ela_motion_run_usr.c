@@ -168,7 +168,7 @@ void ela_motion_run_init(void)
  ********/
 void ela_motion_run_demo_start(void)
 {
-    s_demo_idx = 0;
+    s_demo_idx = 0;   /* 从 0° 开始（0° 磁点修正后验证） */
     s_demo_phase = 0;
     ela_motion_run_goto_target(s_demo_targets[s_demo_idx]);
 }

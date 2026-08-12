@@ -24,6 +24,10 @@
 #define AUTO_SPEED  2
 #define FINE_SPEED  1
 
+/* 表级质量判据（生成后/上电验收，依据 memory 诊断修正: 斜率 3.125 微步/计数） */
+#define TABLE_SLOPE_MIN   2      /* 相邻编码器微步差下限（理论 3.125） */
+#define TABLE_SLOPE_MAX   5      /* 相邻编码器微步差上限 */
+
 /* 复位对齐参数（闭环转到编码器目标值） */
 #define CALI_RESET_ENC_TARGET  0      /* 复位目标编码器值 */
 #define CALI_RESET_CTRL_DIV    5      /* 每 5 个 20kHz tick 控制一次 = 4kHz */

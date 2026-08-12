@@ -72,3 +72,23 @@
 - (2026-08-11) TIM4 NVIC 中断: ISER bit30(TIM4_IRQn) 未使能 → proc 不跑磁场不动(cur 恒定) → demo 启动处加 HAL_NVIC_EnableIRQ(TIM4_IRQn) 修复
 - (2026-08-11) serial_monitor.py bug: ① out_fh wb 模式写 str 崩溃 → 改 w+utf-8 ② stdout GBK 无法编码 \ufffd → reconfigure utf-8 errors=replace
 - 已知未解决: 校准表 0° 磁点偏移(~1196 微步) → 0° 卡死(enc 62 恒定)；需专项 0° 磁点校准或校准环绕段重写；90/180/270 需 NVIC 修复后复验
+
+## 诊断修正 (2026-08-12)
+- **误诊 1（已推翻）**: "初始位置/校准对齐重现性" 是误诊——校准表是自洽双射，闭环 err=纯编码器计数(target_enc-enc, ela_motion_run_usr.c:255)，表仅做 target→微步换算(s_target_step=g_cali_table[target])，**任何整体偏移都被闭环吸收**，table[0] 无需每次一致。
+  数据自证: table[0] 漂移序列 275/12563/12566/39187/25878/86 取 mod 1024 → 275/275/278/275/278/**86**，前 5 次场角一致(±3 微步)仅圈数不同=无害；86 才是真坏表。
+  真正不变量: 表连续/单调/无跳变/回绕连续(table[16383] vs table[0]≈3)。0° 卡死根因=回绕边界局部坏点(修前差 248)，非 table[0] 绝对值错。
+  处理: 坏表应由 calibration_check_continuity/jump 检测 data_err 拒收重校准，不靠"对齐重现"保证
+
+## 代码改动 (2026-08-12, /cl code)
+- **表级质量判据 `calibration_check_table_quality()`** (elaco_calibration_usr.c):
+  - 扫描全表 16384 项，相邻微步差(含回绕对 i=16383→0)须 ∈ [2,5] (斜率理论 3.125, MICROSTEPLAP/ENC_RESOLUTION)
+  - 不设方向硬判(ad 覆盖), 斜率合法性优先——闭环靠单调连续而非绝对方向
+  - 不合格 → data_err=4 + 打印 `[CALI] table bad: enc=%u..%u diff=%d`, 不置 calitable_flag
+- **调用点**: ① `calibration_generate_table()` 生成后验 → 坏表拒收不进运行态;
+  ② `elaco_calibration_table_data_valid()` 上电验收复用同一判据(原只查首字非空)
+  ③ `CALI_STEP_GENERATE`: 坏表(data_err≠0)时**跳过 zero_offset_fix**, 打印
+  `[CALI] table rejected: data_err=%d, re-calibrate`
+- **头文件**: 新增 `TABLE_SLOPE_MIN 2` / `TABLE_SLOPE_MAX 5` (elaco_calibration_usr.h)
+- 编译: keil_build 0 Error 0 Warning; RAM 37.0KB (须确认未超 F103 48KB; Flash 28.2KB ok)
+- ⚠️ 待实测: TABLE_SLOPE 判据若因采样噪声致正常表也拒收 → 放宽区间或改非硬拒收(统计 diff 分布后取包络)
+- 测试入口: require.md「下次窗口实测步骤」——烧录→校准→看 [CALI] table bad/rejected→demo 4 角度 err 收敛判据

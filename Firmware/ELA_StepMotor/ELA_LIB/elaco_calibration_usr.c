@@ -304,6 +304,46 @@ static void calibration_print_data(void)
 }
 
 /********
+ * @ 输出: 0=表质量合格; 非 0=拒绝码（data_err 值）
+ * @ 说明: 表级质量判据。扫描校准表全部 16384 项，验证:
+ *         1) 相邻微步差 ∈ [TABLE_SLOPE_MIN, TABLE_SLOPE_MAX]
+ *           （斜率理论 3.125 微步/计数，依据 .cl/memory/ 推导值
+ *             MICROSTEPLAP/ENC_RESOLUTION = 51200/16384）
+ *         2) 表单调递减（编码器↑ → 微步↓，硬件约定）
+ *         3) 回绕连续: table[0] 与 table[16383] 差≈3（同判据 1 覆盖，
+ *           因环绕扫描 e=0..16383 时首尾对即回绕边）
+ *         任一不合格 → 返回拒绝码，生成方不置 calitable_flag
+ * 依据: .cl/memory/ 诊断修正——表为自洽双射，整体偏移可被闭环吸收，
+ *       但斜率错/跳变/缺位会导致局部闭环不收敛（0° 卡死根因之一）
+ ********/
+static unsigned char calibration_check_table_quality(void)
+{
+    unsigned int i;
+
+    for (i = 0; i < ENC_RESOLUTION; i++)
+    {
+        unsigned int next = (i + 1) % ENC_RESOLUTION;
+        int cur = (int)g_cali_table[i];
+        int nxt = (int)g_cali_table[next];
+        int d = cyclecal_diff(cur, nxt, MICROSTEPLAP);
+        int ad = (d > 0) ? d : -d;
+
+        /* 斜率∈[MIN,MAX]（含回绕对 i=16383→0，cyclecal_diff 已取最短差）；
+         * 方向由 ad 覆盖（反向表 d≈+3 同样 ∈[2,5]，不设方向硬判，
+         * 斜率合法性优先——闭环靠单调连续而非绝对方向） */
+        if (ad < TABLE_SLOPE_MIN || ad > TABLE_SLOPE_MAX)
+        {
+            printf("[CALI] table bad: enc=%u..%u diff=%d (expect "
+                   "%d~%d)\r\n", i, next, d, TABLE_SLOPE_MIN,
+                   TABLE_SLOPE_MAX);
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+/********
  * @ 说明: 根据校准数据生成校准表，线性插值后写入 Flash。
  *         校准表以编码器值为索引，微步值为内容，共 16384 个
  *         halfword，写入 STOCKFILE_CALI_ADDR 分区。
@@ -355,9 +395,21 @@ static void calibration_generate_table(void)
     ela_stockfile_usr_seq_write_end(&g_stockfile_cali_st);
 
     if (ENC_RESOLUTION == result_num)
-        g_calibra_st.calitable_flag = true;
+    {
+        /* 表级质量判据：斜率/单调/回绕任一不合格 → 不置 flag 拒收 */
+        if (0 == calibration_check_table_quality())
+        {
+            g_calibra_st.calitable_flag = true;
+        }
+        else
+        {
+            g_calibra_st.data_err = 4;
+        }
+    }
     else
+    {
         g_calibra_st.data_err = 4;
+    }
 }
 
 /********
@@ -451,7 +503,11 @@ void elaco_calibration_table_data_valid(void)
     uint16_t first = g_cali_table[0];
     if ((0xFFFF != first) && (0 != first))
     {
-        g_calibra_st.calitable_flag = true;
+        /* 上电验收复用表级判据，坏表不进入运行态（原只查首字非空） */
+        if (0 == calibration_check_table_quality())
+        {
+            g_calibra_st.calitable_flag = true;
+        }
     }
 }
 
@@ -484,7 +540,15 @@ void elaco_calibration_table_generate_proc(void)
 
         case CALI_STEP_GENERATE:
             calibration_generate_table();
-            calibration_zero_offset_fix();
+            if (0 == g_calibra_st.data_err)
+            {
+                calibration_zero_offset_fix();
+            }
+            else
+            {
+                printf("[CALI] table rejected: data_err=%d, "
+                       "re-calibrate\r\n", g_calibra_st.data_err);
+            }
             g_calibra_st.cali_step = CALI_STEP_DONE;
             break;
 

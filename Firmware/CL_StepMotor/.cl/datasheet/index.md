@@ -1,56 +1,67 @@
-# .cl/datasheet 导航索引（AI 生成）
+# .cl/datasheet 索引
 
-> 数据手册按**逐页**拆分（technical / pymupdf_tables）。
-> 命名规则：`pages/<型号>.chNN.p0TT.md`（TT=原 PDF 页码）。
-> 检索时先定位概念所涉章节/页，再只 Read 目标小文件，禁止整读。
+> 拉取协议：先读本索引定位 → 按需只 Read 目标页文件 `pages/<base>.ch00.pNNN.md`。
+> 全部为逐页文件（ch00 为提取器未分章的兜底命名，页号见文件名 pNNN → PDF 页 NNN）。
+> 来源 PDF 均为中文版（MT6816）/英文版（TB67H450）。
 
-## MT6816CT-ACD（磁性角度编码器，SPI 读 14bit 绝对角度）
+## MT6816CT-ACD.PDF（30 页，磁性角度编码器，SPI 绝对角度 14bit）
 
-- 引脚定义 / 封装 / 型号列表 → `p003`（图-1 SOP-8，引脚 1-CSN 2-HVPP 3-OUT/PWM 4-VDD 5-A/U 6-B/V 7-Z/W 8-GND）
-- 功能框图：`p005`；极限/正常工作条件：`p006`
-- 电气性能（精度/噪声/迟滞/上电时间16ms）：`p007`；ABZ/PWM 输出参数：`p008`
-- 外加磁场/磁铁安装要求：`p009`
-- 输出模式总览（ABZ/UVW/PWM/SPI 引脚复用，HVPP 接高电平→SPI 模式）：`p010`
-- ABZ/UVW/PWM 参考电路：`p011`
-- ABZ 正交 A/B/Z 输出（Z 脉冲宽度 1/2/4/8/12/16LSB）：`p012` `p013` `p014`
-- ABZ 分辨率映射：`p015` `p016` `p017`
-- **SPI 接口（核心）**：`p019`（4线/3线模式，SPI_Mode OTP 寄存器）
-  - SPI 时序（**模式3 CPOL=1,CPHA=1，上升沿采样**）：`p020`
-  - 4线 SPI 协议（bit0 R/W + bit1-7 地址 + bit8-15 数据）：`p021`
-  - 3线 SPI 协议：`p022`
-  - SPI 读角度（14bit 绝对角度）：`p023` `p024`
-- MTP 编程：`p025`
-- 机械角度与方向（ROTDIR 寄存器，转动方向）：`p027`
-- 封装信息：`p028`
+| PDF 页 | 文件 | 内容主题 |
+|:-------|:-----|:---------|
+| 1 | `MT6816CT-ACD.ch00.p001.md` | 特性、概述、应用（闭环步进） |
+| 2 | `MT6816CT-ACD.ch00.p002.md` | 特性摘要、SPI/ABZ/UVW、极限参数 |
+| 3 | `MT6816CT-ACD.ch00.p003.md` | 系统框图、引脚图、SPI 时序 |
+| 4 | `MT6816CT-ACD.ch00.p004.md` | 引脚定义（SPI、ABZ/UVW） |
+| 5 | `MT6816CT-ACD.ch00.p005.md` | 电气特性、SPI 寄存器开始、角度精度 |
+| 6 | `MT6816CT-ACD.ch00.p006.md` | ABZ/UVW 增量输出 |
+| 7 | `MT6816CT-ACD.ch00.p007.md` | ABZ/UVW 输出时序 |
+| 8 | `MT6816CT-ACD.ch00.p008.md` | ABZ/UVW 输出 |
+| 9 | `MT6816CT-ACD.ch00.p009.md` | （未标注） |
+| 10 | `MT6816CT-ACD.ch00.p010.md` | SPI 寄存器参数、角度 |
+| 11 | `MT6816CT-ACD.ch00.p011.md` | UVW |
+| 12 | `MT6816CT-ACD.ch00.p012.md` | SPI 寄存器、角度 |
+| 13 | `MT6816CT-ACD.ch00.p013.md` | 寄存器、角度 |
+| 14 | `MT6816CT-ACD.ch00.p014.md` | ABZ/UVW |
+| 15 | `MT6816CT-ACD.ch00.p015.md` | ABZ/UVW |
+| 16 | `MT6816CT-ACD.ch00.p016.md` | 寄存器、角度 |
+| 17 | `MT6816CT-ACD.ch00.p017.md` | 寄存器 |
+| 18 | `MT6816CT-ACD.ch00.p018.md` | 寄存器、时序、角度 |
+| 19 | `MT6816CT-ACD.ch00.p019.md` | SPI 寄存器（OTP/配置） |
+| 20 | `MT6816CT-ACD.ch00.p020.md` | SPI 时序 |
+| 21 | `MT6816CT-ACD.ch00.p021.md` | SPI 寄存器写时序 |
+| 22 | `MT6816CT-ACD.ch00.p022.md` | SPI 寄存器、写 |
+| 23 | `MT6816CT-ACD.ch00.p023.md` | SPI 寄存器、角度 |
+| 24 | `MT6816CT-ACD.ch00.p024.md` | SPI 时序 |
+| 25 | `MT6816CT-ACD.ch00.p025.md` | SPI 写（寄存器配置） |
+| 26 | `MT6816CT-ACD.ch00.p026.md` | （未标注） |
+| 27 | `MT6816CT-ACD.ch00.p027.md` | （未标注） |
+| 28 | `MT6816CT-ACD.ch00.p028.md` | （未标注） |
+| 29 | `MT6816CT-ACD.ch00.p029.md` | （未标注） |
+| 30 | `MT6816CT-ACD.ch00.p030.md` | 应用/封装、ABZ/UVW/SPI/角度 |
 
-**关键寄存器/概念速查**：
-| 概念 | 页文件 | 说明 |
-|------|--------|------|
-| SPI 模式 | `p020` | 模式3 (CPOL=1, CPHA=1)，时钟上升沿采样 |
-| 4线 SPI 帧格式 | `p021` | bit0 R/W + A6~A0 地址 + D7~D0 数据，MSB 优先 |
-| 3线 SPI 帧格式 | `p022` | 同上，SDAT 单线半双工 |
-| 绝对角度寄存器 | `p023`-`p024` | SPI 读 14bit 绝对角度 |
-| ROTDIR 方向 | `p027` | 角方向寄存器，作用于所有输出 |
-| 上电时间 | `p007` | 16ms 后输出稳定 |
+## TB67H450FNG.PDF（22 页，PWM 斩波 DC 电机驱动，1 通道，50V/3.5A）
 
-## TB67H450FNG（有刷/步进电机 全桥驱动器）
-
-- 概述 / 特性：`p01`-`p02`
-- 引脚/真值表：`p03` 起
-- 操作模式（导通表 Mode 表）：`p09`
-- 电流波形 / 衰减模式（Fast/Mixed/Slow Decay）：`p08`
-- 斩波配置（CRS/CSR 寄存器）：`p11` 附近（含 PWM 电流控制）
-- 电流检测设定：斩波电流阈值相关
-- 应用电路：`p19`-`p22`
-
-**关键模块/概念速查**：
-| 概念 | 位置文件 | 说明 |
-|------|--------|------|
-| 输入真值表 IN1/IN2→OUT1/OUT2 | `p06` | 正转/反转/制动/待机 |
-| 输出晶体管操作模式 | `p09` | Mode 表（U1/U2/L1/L2） |
-| 混合衰减波形 | `p08` | Fast→Mixed→Slow→Charge |
-| PWM 输入接口 | `p11`-`p13` | 占空比控制电流 |
-
-## 使用提示
-1. STM32 外设寄存器不在本 datasheet 集内（需 STM32F103 参考手册，未提供）。本项目属步进电机闭环，需 SPI(MT6816) + PWM/GPIO(TB67H450) + 电流采样(ADC) + CAN/串口回传。
-2. 引脚映射见 `require.md`；CubeMX 已配：SPI1(MT6816)、TIM2(2组 PWM)、ADC1_IN0、USART1/3(CAN/485)、CAN。
+| PDF 页 | 文件 | 内容主题 |
+|:-------|:-----|:---------|
+| 1 | `TB67H450FNG.ch00.p001.md` | 特性、概述（PWM 恒流/直驱、4 模式） |
+| 2 | `TB67H450FNG.ch00.p002.md` | 引脚图（VREF、VM） |
+| 3 | `TB67H450FNG.ch00.p003.md` | 引脚定义、VREF、电流 |
+| 4 | `TB67H450FNG.ch00.p004.md` | 引脚定义续 |
+| 5 | `TB67H450FNG.ch00.p005.md` | VREF 参考电压 |
+| 6 | `TB67H450FNG.ch00.p006.md` | 操作模式（FWD/REV/BRAKE/STOP） |
+| 7 | `TB67H450FNG.ch00.p007.md` | PWM/斩波、电流控制、衰减、时序 |
+| 8 | `TB67H450FNG.ch00.p008.md` | 电流、衰减、时序 |
+| 9 | `TB67H450FNG.ch00.p009.md` | 电流、时序、VM 电气特性 |
+| 10 | `TB67H450FNG.ch00.p010.md` | VREF、PWM、电流、衰减、增益 |
+| 11 | `TB67H450FNG.ch00.p011.md` | VREF、电流、VM（增益） |
+| 12 | `TB67H450FNG.ch00.p012.md` | PWM、电流、时序、VM（输出电流/offtime） |
+| 13 | `TB67H450FNG.ch00.p013.md` | VREF、电流、VM |
+| 14 | `TB67H450FNG.ch00.p014.md` | 电流、时序（绝对最大额定） |
+| 15 | `TB67H450FNG.ch00.p015.md` | 电流、时序、VM（工作条件） |
+| 16 | `TB67H450FNG.ch00.p016.md` | 封装 |
+| 17 | `TB67H450FNG.ch00.p017.md` | 封装 |
+| 18 | `TB67H450FNG.ch00.p018.md` | 封装 |
+| 19 | `TB67H450FNG.ch00.p019.md` | 开关时序 |
+| 20 | `TB67H450FNG.ch00.p020.md` | 电流、增益（VREF→I 公式） |
+| 21 | `TB67H450FNG.ch00.p021.md` | 应用注记 |
+| 22 | `TB67H450FNG.ch00.p022.md` | 应用电路示例、封装尺寸 |

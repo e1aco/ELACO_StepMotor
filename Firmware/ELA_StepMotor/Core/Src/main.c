@@ -28,7 +28,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "elaco_main.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/

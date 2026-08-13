@@ -85,8 +85,8 @@ Python: C:\Users\electronic\AppData\Local\Programs\Python\Python312\python.exe  
 
 ## 2026-08-13
 > 顺序原则：先核心动作（电机闭环）→ 优化（规划）→ 外围（配置/通信）。不做 485（USART1 不用于命令），命令走 CAN（协议做时再定）。
-- [c] 复刻 button: 按键扫描（100Hz tick）→ button_usr（click/long/IsPressed 事件）<- 输入事件源，独立快（起 2026-08-13 | 止 2026-08-13 | 编译 0E/0W，SW1=id1/SW2=id2，100Hz tick + UART3 事件打印已挂）
-- [ ] 复刻 motor 基础闭环: 编码器 raw×25/8 映射 + FOC 电流输出 + 位置/速度/电流命令 + 速度估计 IIR + 基础状态机（P 环，电机能转/能停/能定位）<- 核心动作先跑通
+- [✓] 复刻 button: 按键扫描（100Hz tick）→ button_usr（click/long/IsPressed 事件）<- 输入事件源，独立快（起 2026-08-13 | 止 2026-08-13 | 验收 2026-08-13 人工验收通过，按键事件与命令链路正常）
+- [✓] 复刻 motor 基础闭环: 编码器 raw×25/8 映射 + FOC 电流输出 + 位置/速度/电流命令 + 速度估计 IIR + 基础状态机（P 环，电机能转/能停/能定位）<- 核心动作先跑通（起 2026-08-13 | 止 2026-08-13 | 验收 2026-08-13 人工验收通过，震动调参 3 轮收敛：Kd400 阻尼+死区输出归零；精度实测 ±0.72° < 死区 0.9°）
 - [ ] 复刻 motion_planner: 4 tracker（Current/Velocity/Position/Trajectory）20kHz 软目标生成（PositionInterpolator 不移植）<- 加减速优化层
 - [ ] 复刻 motor 完善: 接入 planner + PID/DCE + 超前角补偿 + 完整状态机（过载/堵转/未校准）<- 控制质量与保护
 - [ ] 复刻配置持久化: config_usr（BoardConfig_t/默认值/configStatus）+ eeprom_usr（DATA 0x0807F800 读写/IsValid/Erase）<- 掉电保存

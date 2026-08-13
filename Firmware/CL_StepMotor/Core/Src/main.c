@@ -35,6 +35,7 @@
 #include "tb67h450_usr.h"
 #include "mt6816_usr.h"
 #include "encoder_calibrator_usr.h"
+#include "motor_usr.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -55,7 +56,15 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-
+/* 电机配置：默认值按 .cl/memory/ 推导（config_usr 未建，先硬编码默认，任务4 后接 EEPROM） */
+static Motor_Config_T s_motor_config = {
+    .encoderHomeOffset = 0,
+    .ratedCurrent = 2000,                          /* 电流限幅 2000mA（42 步进额定 2A） */
+    .ratedVelocity = 2 * USR_MOTOR_SUBDIVIDE_STEPS, /* 速度限幅 2圈/s（步进低速区间，防失步） */
+    .dceKp = 200,                                  /* 位置 P 环默认增益 200 */
+    .dceKd = 400,                                  /* 位置环速度阻尼增益 400（实测：250 阻尼不足仍有极限环） */
+    .pidKp = 5,                                    /* 速度 P 环默认增益 5 */
+};
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -125,9 +134,9 @@ int main(void)
   USR_MT6816_Init();
   /* 7. 编码器校准初始化：读 Flash 判断是否已有有效校准表 */
   USR_EncoderCalibrator_Init();
-  /* 8. 固定小电流演示：电角度 128(45°) @ 200mA，示波器量 PB10/PB11 占空比 */
-  /*    警告：电机已接时产生保持力矩，确保轴自由旋转、供电正常 */
-  USR_TB67H450_SetFocCurrentVector(128U, 200);
+  /* 8. 电机闭环初始化：注入默认配置（电流限幅 1000mA / 速度限幅 30圈/s / P 环增益） */
+  USR_Motor_SetConfig(&s_motor_config);
+  USR_Motor_Init();
   /* 9. 启动定时中断：TIM1=100Hz(心跳/慢速任务)、TIM4=20kHz(电机控制 tick) */
   HAL_TIM_Base_Start_IT(&htim1);
   HAL_TIM_Base_Start_IT(&htim4);
@@ -164,7 +173,7 @@ void SystemClock_Config(void)
   RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
 
   /** Initializes the RCC Oscillators according to the specified parameters
-  * in the RCC_OscInitStruct structure.
+  * in the RCC_OscInitTypeDef structure.
   */
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
@@ -214,21 +223,71 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         /* 100Hz 按键扫描：边沿检测 + 单击/长按事件 */
         USR_Button_Tick();
 
-        /* 100Hz 心跳：LED1 翻转 + 每秒打印 20kHz 计数证明双 tick 在跑 */
+        /* 100Hz 按键测试：验证电机闭环（单击/长按事件驱动命令，测试段验收后删） */
+        char buf[40];
+        if (USR_Button_GetClick(USR_BUTTON1))
+        {
+            if (USR_Motor_GetMode() != MODE_STOP)
+            {
+                USR_Motor_SetMode(MODE_STOP);
+                DRV_Uart_SendString("MODE_STOP\r\n");
+            }
+            else
+            {
+                USR_Motor_SetMode(MODE_COMMAND_POSITION);
+                DRV_Uart_SendString("MODE_POSITION\r\n");
+            }
+        }
+        if (USR_Button_GetClick(USR_BUTTON2))
+        {
+            USR_Motor_SetPosition(51200 / 4);  /* 目标位置 1/4 圈=90° */
+            DRV_Uart_SendString("POS_90deg\r\n");
+        }
+        if (USR_Button_GetLong(USR_BUTTON2))
+        {
+            USR_Motor_SetPosition(0);
+            USR_Motor_SetVelocity(0);
+            USR_Motor_SetCurrent(0);
+            DRV_Uart_SendString("STOP\r\n");
+        }
+        if (USR_Button_GetLong(USR_BUTTON1))
+        {
+            DRV_Uart_SendString("RESET\r\n");
+            HAL_NVIC_SystemReset();
+        }
+
+        /* 100Hz 遥测：位置/速度/电流/模式/状态（10 次=100ms 一次） */
+        static uint8_t s_tele_cnt = 0;
+        if (++s_tele_cnt >= 10U)
+        {
+            s_tele_cnt = 0U;
+            float pos, vel, cur;
+            uint8_t mode, state;
+            USR_Motor_GetTelemetry(&pos, &vel, &cur, &mode, &state);
+            sprintf(buf, "T:%.3f,%.3f,%.3f,%u,%u\r\n",
+                    pos, vel, cur, (unsigned)mode, (unsigned)state);
+            DRV_Uart_SendString(buf);
+        }
+
+        /* 100Hz 心跳：LED1 翻转 */
         if (++s_tick_100hz_cnt >= 100U)
         {
             s_tick_100hz_cnt = 0U;
             DRV_LED_Set(DRV_LED1, (s_tick_20khz_cnt & 1U) ? true : false);
-            char buf[32];
-            sprintf(buf, "20kHz=%lu\r\n", (unsigned long)s_tick_20khz_cnt);
-            DRV_Uart_SendString(buf);
         }
     }
     else if (TIM4 == htim->Instance)
     {
-        /* 20kHz 电机控制 tick：驱动编码器校准状态机；电机闭环后续接入 */
+        /* 20kHz 电机控制 tick：校准触发→校准状态机；否则→电机闭环 */
         s_tick_20khz_cnt++;
-        USR_EncoderCalibrator_Tick20kHz();
+        if (USR_EncoderCalibrator_IsTriggered())
+        {
+            USR_EncoderCalibrator_Tick20kHz();
+        }
+        else
+        {
+            USR_Motor_Tick20kHz();
+        }
     }
 }
 /* USER CODE END 4 */
@@ -252,7 +311,7 @@ void Error_Handler(void)
   * @brief  Reports the name of the source file and the source line number
   *         where the assert_param error has occurred.
   * @param  file: pointer to the source file name
-  * @param  line: assert_param error source line number
+  * @param  line: assert_param error line source number
   * @retval None
   */
 void assert_failed(uint8_t *file, uint32_t line)

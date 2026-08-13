@@ -689,6 +689,16 @@
               <FileType>5</FileType>
               <FilePath>../module/usr/button_usr.h</FilePath>
             </File>
+            <File>
+              <FileName>motor_usr.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>../module/usr/motor_usr.c</FilePath>
+            </File>
+            <File>
+              <FileName>motor_usr.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>../module/usr/motor_usr.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

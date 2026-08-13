@@ -47,3 +47,4 @@ cl_stepmotor\main.o: ../module/usr/button_usr.h
 cl_stepmotor\main.o: ../module/usr/tb67h450_usr.h
 cl_stepmotor\main.o: ../module/usr/mt6816_usr.h
 cl_stepmotor\main.o: ../module/usr/encoder_calibrator_usr.h
+cl_stepmotor\main.o: ../module/usr/motor_usr.h

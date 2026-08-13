@@ -105,5 +105,9 @@
 - motor_foc_lead_90 = SOFT_DIVIDE_NUM=256  依据: 参考 motor.c CalcCurrentToOutput 正电流超前/负电流滞后 90°（细分步）  日期: 2026-08-12  来源: 推导
 - motor_compensate_angle = 分段补偿 |±430| 步  依据: 参考 motor.c CompensateAdvancedAngle（vel 阈值 100k/1.3M/2.2M，斜率 262/105/52>>20）  日期: 2026-08-12  来源: 推导
 - motor_minloop_control = 简单 P 环 current=Kp×err>>10 限 ±ratedCurrent（Kp=dce_kp=200, err 限 ±3200）  依据: 参考 DCE 输出量纲（kp×pError>>10），暂未接 PID/DCE 任务6  日期: 2026-08-12  来源: 推导
+- motor_loop_damping = dceKd=400 速度阻尼 out=(Kp×err−Kd×(vel>>7))>>10，vel>>7 限 ±4000  依据: 实测整定——纯 P 无阻尼极限环震动；Kd=250 不足、400 收敛；对齐参考 CalcDceToOutput vError 量纲  日期: 2026-08-13  来源: 实测决策
+- motor_loop_deadband_off = 到位死区 POS_DEADBAND=128 细分步(≈0.9°) 内输出直接归零（P+Kd 全停）  依据: 实测——到位后 FOC 电流引起编码器微抖被速度 IIR 放大成假速度→Kd 响应出电流→极限环；STOP 模式 cur=0 时 vel 恒 0 证实电流是抖源；死区输出归零=移除抖源  日期: 2026-08-13  来源: 实测决策
 - motor_est_vel_filter = IIR 低通系数 1/32（integral += Δpos×20kHz + (v<<5 - v), v=integral>>5）  依据: 参考 motor.c 速度估计  日期: 2026-08-12  来源: 推导
 - motor_state_min = STOP/RUNNING/FINISH（最小闭环无过载/堵转/未校准检测，任务6后补）  依据: 参考 motor.c 状态机裁剪  日期: 2026-08-12  来源: 推导
+- motor_pos_deadband = 128 细分步（≈0.9°）  motor_vel_deadband = 512 细分步/s  motor_cur_deadband = 10mA  依据: 最小闭环无 planner，软目标=目标，需自判到位（参考靠 planner 平滑+soft==goal 判 FINISH，最小闭环改用死区判据）；死区内输出归零  日期: 2026-08-13  来源: 推导+实测（2026-08-13 精度实测 pos 稳定 0.248 vs 目标 0.250 → 偏差 0.002 圈≈0.72° < 死区 0.9°）
+- motor_test_limits = currentLimit=2000mA（42 步进额定 2A）、velocityLimit=2圈/s（步进低速区间防失步，用户确认：10圈/s 太快）  依据: 用户反馈“步进电机限幅 2000mA/10圈/s 都太快”，改 2圈/s  日期: 2026-08-13  来源: 实测决策

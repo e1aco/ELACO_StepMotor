@@ -35,11 +35,13 @@
 "cl_stepmotor\tb67h450_drv.o"
 "cl_stepmotor\flash_drv.o"
 "cl_stepmotor\sys_drv.o"
+"cl_stepmotor\button_drv.o"
 "cl_stepmotor\mt6816_usr.o"
 "cl_stepmotor\sin_form_usr.o"
 "cl_stepmotor\tb67h450_usr.o"
 "cl_stepmotor\encoder_calibrator_usr.o"
 "cl_stepmotor\cycle_usr.o"
+"cl_stepmotor\button_usr.o"
 --strict --scatter "CL_StepMotor\CL_StepMotor.sct"
 --summary_stderr --info summarysizes --map --load_addr_map_info --xref --callgraph --symbols
 --info sizes --info totals --info unused --info veneers

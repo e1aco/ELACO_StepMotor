@@ -43,6 +43,7 @@ cl_stepmotor\main.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdio.h
 cl_stepmotor\main.o: ../module/drv/led_drv.h
 cl_stepmotor\main.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdbool.h
 cl_stepmotor\main.o: ../module/drv/uart_drv.h
+cl_stepmotor\main.o: ../module/usr/button_usr.h
 cl_stepmotor\main.o: ../module/usr/tb67h450_usr.h
 cl_stepmotor\main.o: ../module/usr/mt6816_usr.h
 cl_stepmotor\main.o: ../module/usr/encoder_calibrator_usr.h

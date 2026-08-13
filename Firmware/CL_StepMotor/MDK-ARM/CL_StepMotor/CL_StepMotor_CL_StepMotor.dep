@@ -1,7 +1,7 @@
 Dependencies for Project 'CL_StepMotor', Target 'CL_StepMotor': (DO NOT MODIFY !)
 CompilerVersion: 5060960::V5.06 update 7 (build 960)::.\ARMCC
 F (startup_stm32f103xe.s)(0x6A7BCB85)(--cpu Cortex-M3 -g --apcs=interwork -I.\RTE\_CL_StepMotor-IC:\Users\electronic\AppData\Local\Arm\Packs\ARM\CMSIS\6.1.0\CMSIS\Core\Include-IC:\Users\electronic\AppData\Local\Arm\Packs\Keil\STM32F1xx_DFP\2.2.0\Device\Include--pd "__UVISION_VERSION SETA 543" --pd "STM32F10X_HD SETA 1" --pd "_RTE_ SETA 1"--list startup_stm32f103xe.lst --xref -o cl_stepmotor\startup_stm32f103xe.o --depend cl_stepmotor\startup_stm32f103xe.d)
-F (../Core/Src/main.c)(0x6A7C09A2)(--c99 -c --cpu Cortex-M3 -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include -I ../module/drv -I ../module/usr -I ../module/test-I.\RTE\_CL_StepMotor-IC:\Users\electronic\AppData\Local\Arm\Packs\ARM\CMSIS\6.1.0\CMSIS\Core\Include-IC:\Users\electronic\AppData\Local\Arm\Packs\Keil\STM32F1xx_DFP\2.2.0\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o cl_stepmotor\main.o --omf_browse cl_stepmotor\main.crf --depend cl_stepmotor\main.d)
+F (../Core/Src/main.c)(0x6A7D8273)(--c99 -c --cpu Cortex-M3 -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include -I ../module/drv -I ../module/usr -I ../module/test-I.\RTE\_CL_StepMotor-IC:\Users\electronic\AppData\Local\Arm\Packs\ARM\CMSIS\6.1.0\CMSIS\Core\Include-IC:\Users\electronic\AppData\Local\Arm\Packs\Keil\STM32F1xx_DFP\2.2.0\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o cl_stepmotor\main.o --omf_browse cl_stepmotor\main.crf --depend cl_stepmotor\main.d)
 I (../Core/Inc/main.h)(0x6A7BCB84)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x6996B7F7)
 I (../Core/Inc/stm32f1xx_hal_conf.h)(0x6A7BCB83)
@@ -42,11 +42,12 @@ I (../Core/Inc/tim.h)(0x6A7BCB82)
 I (../Core/Inc/usart.h)(0x6A7BCB83)
 I (../Core/Inc/gpio.h)(0x6A7BCB80)
 I (C:\Keil_v5\ARM\ARMCC\include\stdio.h)(0x5E8E3CC2)
-I (../module/drv/led_drv.h)(0x6A7BD85C)
+I (../module/drv/led_drv.h)(0x6A7D799C)
 I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x5E8E3CC2)
-I (../module/drv/uart_drv.h)(0x6A7BD85C)
-I (../module/usr/tb67h450_usr.h)(0x6A7BE559)
-I (../module/usr/mt6816_usr.h)(0x6A7BDCEC)
+I (../module/drv/uart_drv.h)(0x6A7D799C)
+I (../module/usr/button_usr.h)(0x6A7D760B)
+I (../module/usr/tb67h450_usr.h)(0x6A7D799C)
+I (../module/usr/mt6816_usr.h)(0x6A7D799C)
 I (../module/usr/encoder_calibrator_usr.h)(0x6A7C095C)
 F (../Core/Src/gpio.c)(0x6A7BCB80)(--c99 -c --cpu Cortex-M3 -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include -I ../module/drv -I ../module/usr -I ../module/test-I.\RTE\_CL_StepMotor-IC:\Users\electronic\AppData\Local\Arm\Packs\ARM\CMSIS\6.1.0\CMSIS\Core\Include-IC:\Users\electronic\AppData\Local\Arm\Packs\Keil\STM32F1xx_DFP\2.2.0\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o cl_stepmotor\gpio.o --omf_browse cl_stepmotor\gpio.crf --depend cl_stepmotor\gpio.d)
 I (../Core/Inc/gpio.h)(0x6A7BCB80)
@@ -961,8 +962,8 @@ I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_spi.h)(0x6996B7F7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h)(0x6996B7F7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h)(0x6996B7F7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h)(0x6996B7F7)
-F (../module/drv/led_drv.c)(0x6A7BDDCB)(--c99 -c --cpu Cortex-M3 -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include -I ../module/drv -I ../module/usr -I ../module/test-I.\RTE\_CL_StepMotor-IC:\Users\electronic\AppData\Local\Arm\Packs\ARM\CMSIS\6.1.0\CMSIS\Core\Include-IC:\Users\electronic\AppData\Local\Arm\Packs\Keil\STM32F1xx_DFP\2.2.0\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o cl_stepmotor\led_drv.o --omf_browse cl_stepmotor\led_drv.crf --depend cl_stepmotor\led_drv.d)
-I (../module/drv/led_drv.h)(0x6A7BD85C)
+F (../module/drv/led_drv.c)(0x6A7D7D40)(--c99 -c --cpu Cortex-M3 -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include -I ../module/drv -I ../module/usr -I ../module/test-I.\RTE\_CL_StepMotor-IC:\Users\electronic\AppData\Local\Arm\Packs\ARM\CMSIS\6.1.0\CMSIS\Core\Include-IC:\Users\electronic\AppData\Local\Arm\Packs\Keil\STM32F1xx_DFP\2.2.0\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o cl_stepmotor\led_drv.o --omf_browse cl_stepmotor\led_drv.crf --depend cl_stepmotor\led_drv.d)
+I (../module/drv/led_drv.h)(0x6A7D799C)
 I (C:\Keil_v5\ARM\ARMCC\include\stdint.h)(0x5E8E3CC2)
 I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x5E8E3CC2)
 I (../Core/Inc/main.h)(0x6A7BCB84)
@@ -996,9 +997,9 @@ I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_spi.h)(0x6996B7F7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h)(0x6996B7F7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h)(0x6996B7F7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h)(0x6996B7F7)
-F (../module/drv/led_drv.h)(0x6A7BD85C)()
+F (../module/drv/led_drv.h)(0x6A7D799C)()
 F (../module/drv/uart_drv.c)(0x6A7BD889)(--c99 -c --cpu Cortex-M3 -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include -I ../module/drv -I ../module/usr -I ../module/test-I.\RTE\_CL_StepMotor-IC:\Users\electronic\AppData\Local\Arm\Packs\ARM\CMSIS\6.1.0\CMSIS\Core\Include-IC:\Users\electronic\AppData\Local\Arm\Packs\Keil\STM32F1xx_DFP\2.2.0\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o cl_stepmotor\uart_drv.o --omf_browse cl_stepmotor\uart_drv.crf --depend cl_stepmotor\uart_drv.d)
-I (../module/drv/uart_drv.h)(0x6A7BD85C)
+I (../module/drv/uart_drv.h)(0x6A7D799C)
 I (C:\Keil_v5\ARM\ARMCC\include\stdint.h)(0x5E8E3CC2)
 I (../Core/Inc/usart.h)(0x6A7BCB83)
 I (../Core/Inc/main.h)(0x6A7BCB84)
@@ -1033,9 +1034,9 @@ I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h)(0x6996B7F7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h)(0x6996B7F7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h)(0x6996B7F7)
 I (C:\Keil_v5\ARM\ARMCC\include\string.h)(0x5E8E3CC2)
-F (../module/drv/uart_drv.h)(0x6A7BD85C)()
-F (../module/drv/mt6816_drv.c)(0x6A7BDDF6)(--c99 -c --cpu Cortex-M3 -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include -I ../module/drv -I ../module/usr -I ../module/test-I.\RTE\_CL_StepMotor-IC:\Users\electronic\AppData\Local\Arm\Packs\ARM\CMSIS\6.1.0\CMSIS\Core\Include-IC:\Users\electronic\AppData\Local\Arm\Packs\Keil\STM32F1xx_DFP\2.2.0\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o cl_stepmotor\mt6816_drv.o --omf_browse cl_stepmotor\mt6816_drv.crf --depend cl_stepmotor\mt6816_drv.d)
-I (../module/drv/mt6816_drv.h)(0x6A7BDC96)
+F (../module/drv/uart_drv.h)(0x6A7D799C)()
+F (../module/drv/mt6816_drv.c)(0x6A7D7BDB)(--c99 -c --cpu Cortex-M3 -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include -I ../module/drv -I ../module/usr -I ../module/test-I.\RTE\_CL_StepMotor-IC:\Users\electronic\AppData\Local\Arm\Packs\ARM\CMSIS\6.1.0\CMSIS\Core\Include-IC:\Users\electronic\AppData\Local\Arm\Packs\Keil\STM32F1xx_DFP\2.2.0\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o cl_stepmotor\mt6816_drv.o --omf_browse cl_stepmotor\mt6816_drv.crf --depend cl_stepmotor\mt6816_drv.d)
+I (../module/drv/mt6816_drv.h)(0x6A7D799C)
 I (C:\Keil_v5\ARM\ARMCC\include\stdint.h)(0x5E8E3CC2)
 I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x5E8E3CC2)
 I (../Core/Inc/spi.h)(0x6A7BCB82)
@@ -1070,9 +1071,9 @@ I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_spi.h)(0x6996B7F7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h)(0x6996B7F7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h)(0x6996B7F7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h)(0x6996B7F7)
-F (../module/drv/mt6816_drv.h)(0x6A7BDC96)()
-F (../module/drv/tb67h450_drv.c)(0x6A7BE559)(--c99 -c --cpu Cortex-M3 -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include -I ../module/drv -I ../module/usr -I ../module/test-I.\RTE\_CL_StepMotor-IC:\Users\electronic\AppData\Local\Arm\Packs\ARM\CMSIS\6.1.0\CMSIS\Core\Include-IC:\Users\electronic\AppData\Local\Arm\Packs\Keil\STM32F1xx_DFP\2.2.0\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o cl_stepmotor\tb67h450_drv.o --omf_browse cl_stepmotor\tb67h450_drv.crf --depend cl_stepmotor\tb67h450_drv.d)
-I (../module/drv/tb67h450_drv.h)(0x6A7BE559)
+F (../module/drv/mt6816_drv.h)(0x6A7D799C)()
+F (../module/drv/tb67h450_drv.c)(0x6A7D799C)(--c99 -c --cpu Cortex-M3 -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include -I ../module/drv -I ../module/usr -I ../module/test-I.\RTE\_CL_StepMotor-IC:\Users\electronic\AppData\Local\Arm\Packs\ARM\CMSIS\6.1.0\CMSIS\Core\Include-IC:\Users\electronic\AppData\Local\Arm\Packs\Keil\STM32F1xx_DFP\2.2.0\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o cl_stepmotor\tb67h450_drv.o --omf_browse cl_stepmotor\tb67h450_drv.crf --depend cl_stepmotor\tb67h450_drv.d)
+I (../module/drv/tb67h450_drv.h)(0x6A7D799C)
 I (C:\Keil_v5\ARM\ARMCC\include\stdint.h)(0x5E8E3CC2)
 I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x5E8E3CC2)
 I (../Core/Inc/tim.h)(0x6A7BCB82)
@@ -1107,7 +1108,7 @@ I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_spi.h)(0x6996B7F7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h)(0x6996B7F7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h)(0x6996B7F7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h)(0x6996B7F7)
-F (../module/drv/tb67h450_drv.h)(0x6A7BE559)()
+F (../module/drv/tb67h450_drv.h)(0x6A7D799C)()
 F (../module/drv/flash_drv.c)(0x6A7C09E1)(--c99 -c --cpu Cortex-M3 -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include -I ../module/drv -I ../module/usr -I ../module/test-I.\RTE\_CL_StepMotor-IC:\Users\electronic\AppData\Local\Arm\Packs\ARM\CMSIS\6.1.0\CMSIS\Core\Include-IC:\Users\electronic\AppData\Local\Arm\Packs\Keil\STM32F1xx_DFP\2.2.0\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o cl_stepmotor\flash_drv.o --omf_browse cl_stepmotor\flash_drv.crf --depend cl_stepmotor\flash_drv.d)
 I (../module/drv/flash_drv.h)(0x6A7C09C9)
 I (C:\Keil_v5\ARM\ARMCC\include\stdint.h)(0x5E8E3CC2)
@@ -1142,8 +1143,9 @@ I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h)(0x6996B7F7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h)(0x6996B7F7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h)(0x6996B7F7)
 F (../module/drv/flash_drv.h)(0x6A7C09C9)()
-F (../module/drv/sys_drv.c)(0x6A7C1D03)(--c99 -c --cpu Cortex-M3 -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include -I ../module/drv -I ../module/usr -I ../module/test-I.\RTE\_CL_StepMotor-IC:\Users\electronic\AppData\Local\Arm\Packs\ARM\CMSIS\6.1.0\CMSIS\Core\Include-IC:\Users\electronic\AppData\Local\Arm\Packs\Keil\STM32F1xx_DFP\2.2.0\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o cl_stepmotor\sys_drv.o --omf_browse cl_stepmotor\sys_drv.crf --depend cl_stepmotor\sys_drv.d)
-I (../module/drv/sys_drv.h)(0x6A7C1CFD)
+F (../module/drv/sys_drv.c)(0x6A7D75C1)(--c99 -c --cpu Cortex-M3 -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include -I ../module/drv -I ../module/usr -I ../module/test-I.\RTE\_CL_StepMotor-IC:\Users\electronic\AppData\Local\Arm\Packs\ARM\CMSIS\6.1.0\CMSIS\Core\Include-IC:\Users\electronic\AppData\Local\Arm\Packs\Keil\STM32F1xx_DFP\2.2.0\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o cl_stepmotor\sys_drv.o --omf_browse cl_stepmotor\sys_drv.crf --depend cl_stepmotor\sys_drv.d)
+I (../module/drv/sys_drv.h)(0x6A7D7604)
+I (C:\Keil_v5\ARM\ARMCC\include\stdint.h)(0x5E8E3CC2)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x6996B7F7)
 I (../Core/Inc/stm32f1xx_hal_conf.h)(0x6A7BCB83)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h)(0x6996B7F7)
@@ -1151,7 +1153,6 @@ I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_def.h)(0x6996B7F7)
 I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f1xx.h)(0x6996B7F7)
 I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f103xe.h)(0x6996B7F7)
 I (../Drivers/CMSIS/Include/core_cm3.h)(0x6996B7E9)
-I (C:\Keil_v5\ARM\ARMCC\include\stdint.h)(0x5E8E3CC2)
 I (../Drivers/CMSIS/Include/cmsis_version.h)(0x6996B7E9)
 I (../Drivers/CMSIS/Include/cmsis_compiler.h)(0x6996B7E9)
 I (../Drivers/CMSIS/Include/cmsis_armcc.h)(0x6996B7E9)
@@ -1175,35 +1176,71 @@ I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_spi.h)(0x6996B7F7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h)(0x6996B7F7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h)(0x6996B7F7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h)(0x6996B7F7)
-F (../module/drv/sys_drv.h)(0x6A7C1CFD)()
-F (../module/usr/mt6816_usr.c)(0x6A7BE2BC)(--c99 -c --cpu Cortex-M3 -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include -I ../module/drv -I ../module/usr -I ../module/test-I.\RTE\_CL_StepMotor-IC:\Users\electronic\AppData\Local\Arm\Packs\ARM\CMSIS\6.1.0\CMSIS\Core\Include-IC:\Users\electronic\AppData\Local\Arm\Packs\Keil\STM32F1xx_DFP\2.2.0\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o cl_stepmotor\mt6816_usr.o --omf_browse cl_stepmotor\mt6816_usr.crf --depend cl_stepmotor\mt6816_usr.d)
-I (../module/usr/mt6816_usr.h)(0x6A7BDCEC)
+F (../module/drv/sys_drv.h)(0x6A7D7604)()
+F (../module/drv/button_drv.c)(0x6A7D760B)(--c99 -c --cpu Cortex-M3 -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include -I ../module/drv -I ../module/usr -I ../module/test-I.\RTE\_CL_StepMotor-IC:\Users\electronic\AppData\Local\Arm\Packs\ARM\CMSIS\6.1.0\CMSIS\Core\Include-IC:\Users\electronic\AppData\Local\Arm\Packs\Keil\STM32F1xx_DFP\2.2.0\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o cl_stepmotor\button_drv.o --omf_browse cl_stepmotor\button_drv.crf --depend cl_stepmotor\button_drv.d)
+I (../module/drv/button_drv.h)(0x6A7D760B)
 I (C:\Keil_v5\ARM\ARMCC\include\stdint.h)(0x5E8E3CC2)
 I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x5E8E3CC2)
-I (../module/drv/mt6816_drv.h)(0x6A7BDC96)
+I (../Core/Inc/main.h)(0x6A7BCB84)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x6996B7F7)
+I (../Core/Inc/stm32f1xx_hal_conf.h)(0x6A7BCB83)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h)(0x6996B7F7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_def.h)(0x6996B7F7)
+I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f1xx.h)(0x6996B7F7)
+I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f103xe.h)(0x6996B7F7)
+I (../Drivers/CMSIS/Include/core_cm3.h)(0x6996B7E9)
+I (../Drivers/CMSIS/Include/cmsis_version.h)(0x6996B7E9)
+I (../Drivers/CMSIS/Include/cmsis_compiler.h)(0x6996B7E9)
+I (../Drivers/CMSIS/Include/cmsis_armcc.h)(0x6996B7E9)
+I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/system_stm32f1xx.h)(0x6996B7F7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h)(0x6996B7F7)
 I (C:\Keil_v5\ARM\ARMCC\include\stddef.h)(0x5E8E3CC2)
-F (../module/usr/mt6816_usr.h)(0x6A7BDCEC)()
-F (../module/usr/sin_form_usr.c)(0x6A7BE5B3)(--c99 -c --cpu Cortex-M3 -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include -I ../module/drv -I ../module/usr -I ../module/test-I.\RTE\_CL_StepMotor-IC:\Users\electronic\AppData\Local\Arm\Packs\ARM\CMSIS\6.1.0\CMSIS\Core\Include-IC:\Users\electronic\AppData\Local\Arm\Packs\Keil\STM32F1xx_DFP\2.2.0\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o cl_stepmotor\sin_form_usr.o --omf_browse cl_stepmotor\sin_form_usr.crf --depend cl_stepmotor\sin_form_usr.d)
-I (../module/usr/sin_form_usr.h)(0x6A7BE559)
-I (C:\Keil_v5\ARM\ARMCC\include\stdint.h)(0x5E8E3CC2)
-F (../module/usr/sin_form_usr.h)(0x6A7BE559)()
-F (../module/usr/tb67h450_usr.c)(0x6A7BE559)(--c99 -c --cpu Cortex-M3 -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include -I ../module/drv -I ../module/usr -I ../module/test-I.\RTE\_CL_StepMotor-IC:\Users\electronic\AppData\Local\Arm\Packs\ARM\CMSIS\6.1.0\CMSIS\Core\Include-IC:\Users\electronic\AppData\Local\Arm\Packs\Keil\STM32F1xx_DFP\2.2.0\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o cl_stepmotor\tb67h450_usr.o --omf_browse cl_stepmotor\tb67h450_usr.crf --depend cl_stepmotor\tb67h450_usr.d)
-I (../module/usr/tb67h450_usr.h)(0x6A7BE559)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc_ex.h)(0x6996B7F7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio.h)(0x6996B7F7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio_ex.h)(0x6996B7F7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_exti.h)(0x6996B7F7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma.h)(0x6996B7F7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma_ex.h)(0x6996B7F7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_can.h)(0x6996B7F7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_cortex.h)(0x6996B7F7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_adc.h)(0x6996B7F7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_adc_ex.h)(0x6996B7F7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash.h)(0x6996B7F7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash_ex.h)(0x6996B7F7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x6996B7F7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_spi.h)(0x6996B7F7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h)(0x6996B7F7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h)(0x6996B7F7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h)(0x6996B7F7)
+F (../module/drv/button_drv.h)(0x6A7D760B)()
+F (../module/usr/mt6816_usr.c)(0x6A7BE2BC)(--c99 -c --cpu Cortex-M3 -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include -I ../module/drv -I ../module/usr -I ../module/test-I.\RTE\_CL_StepMotor-IC:\Users\electronic\AppData\Local\Arm\Packs\ARM\CMSIS\6.1.0\CMSIS\Core\Include-IC:\Users\electronic\AppData\Local\Arm\Packs\Keil\STM32F1xx_DFP\2.2.0\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o cl_stepmotor\mt6816_usr.o --omf_browse cl_stepmotor\mt6816_usr.crf --depend cl_stepmotor\mt6816_usr.d)
+I (../module/usr/mt6816_usr.h)(0x6A7D799C)
 I (C:\Keil_v5\ARM\ARMCC\include\stdint.h)(0x5E8E3CC2)
 I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x5E8E3CC2)
-I (../module/drv/tb67h450_drv.h)(0x6A7BE559)
-I (../module/usr/sin_form_usr.h)(0x6A7BE559)
-F (../module/usr/tb67h450_usr.h)(0x6A7BE559)()
-F (../module/usr/encoder_calibrator_usr.c)(0x6A7C2746)(--c99 -c --cpu Cortex-M3 -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include -I ../module/drv -I ../module/usr -I ../module/test-I.\RTE\_CL_StepMotor-IC:\Users\electronic\AppData\Local\Arm\Packs\ARM\CMSIS\6.1.0\CMSIS\Core\Include-IC:\Users\electronic\AppData\Local\Arm\Packs\Keil\STM32F1xx_DFP\2.2.0\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o cl_stepmotor\encoder_calibrator_usr.o --omf_browse cl_stepmotor\encoder_calibrator_usr.crf --depend cl_stepmotor\encoder_calibrator_usr.d)
+I (../module/drv/mt6816_drv.h)(0x6A7D799C)
+I (C:\Keil_v5\ARM\ARMCC\include\stddef.h)(0x5E8E3CC2)
+F (../module/usr/mt6816_usr.h)(0x6A7D799C)()
+F (../module/usr/sin_form_usr.c)(0x6A7D799C)(--c99 -c --cpu Cortex-M3 -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include -I ../module/drv -I ../module/usr -I ../module/test-I.\RTE\_CL_StepMotor-IC:\Users\electronic\AppData\Local\Arm\Packs\ARM\CMSIS\6.1.0\CMSIS\Core\Include-IC:\Users\electronic\AppData\Local\Arm\Packs\Keil\STM32F1xx_DFP\2.2.0\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o cl_stepmotor\sin_form_usr.o --omf_browse cl_stepmotor\sin_form_usr.crf --depend cl_stepmotor\sin_form_usr.d)
+I (../module/usr/sin_form_usr.h)(0x6A7D799C)
+I (C:\Keil_v5\ARM\ARMCC\include\stdint.h)(0x5E8E3CC2)
+F (../module/usr/sin_form_usr.h)(0x6A7D799C)()
+F (../module/usr/tb67h450_usr.c)(0x6A7D799C)(--c99 -c --cpu Cortex-M3 -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include -I ../module/drv -I ../module/usr -I ../module/test-I.\RTE\_CL_StepMotor-IC:\Users\electronic\AppData\Local\Arm\Packs\ARM\CMSIS\6.1.0\CMSIS\Core\Include-IC:\Users\electronic\AppData\Local\Arm\Packs\Keil\STM32F1xx_DFP\2.2.0\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o cl_stepmotor\tb67h450_usr.o --omf_browse cl_stepmotor\tb67h450_usr.crf --depend cl_stepmotor\tb67h450_usr.d)
+I (../module/usr/tb67h450_usr.h)(0x6A7D799C)
+I (C:\Keil_v5\ARM\ARMCC\include\stdint.h)(0x5E8E3CC2)
+I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x5E8E3CC2)
+I (../module/drv/tb67h450_drv.h)(0x6A7D799C)
+I (../module/usr/sin_form_usr.h)(0x6A7D799C)
+F (../module/usr/tb67h450_usr.h)(0x6A7D799C)()
+F (../module/usr/encoder_calibrator_usr.c)(0x6A7D8100)(--c99 -c --cpu Cortex-M3 -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include -I ../module/drv -I ../module/usr -I ../module/test-I.\RTE\_CL_StepMotor-IC:\Users\electronic\AppData\Local\Arm\Packs\ARM\CMSIS\6.1.0\CMSIS\Core\Include-IC:\Users\electronic\AppData\Local\Arm\Packs\Keil\STM32F1xx_DFP\2.2.0\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o cl_stepmotor\encoder_calibrator_usr.o --omf_browse cl_stepmotor\encoder_calibrator_usr.crf --depend cl_stepmotor\encoder_calibrator_usr.d)
 I (../module/usr/encoder_calibrator_usr.h)(0x6A7C095C)
 I (C:\Keil_v5\ARM\ARMCC\include\stdint.h)(0x5E8E3CC2)
 I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x5E8E3CC2)
-I (../module/usr/mt6816_usr.h)(0x6A7BDCEC)
-I (../module/usr/tb67h450_usr.h)(0x6A7BE559)
+I (../module/usr/mt6816_usr.h)(0x6A7D799C)
+I (../module/usr/tb67h450_usr.h)(0x6A7D799C)
 I (../module/drv/flash_drv.h)(0x6A7C09C9)
-I (../module/drv/uart_drv.h)(0x6A7BD85C)
+I (../module/drv/uart_drv.h)(0x6A7D799C)
 I (../module/usr/cycle_usr.h)(0x6A7C118D)
-I (../module/drv/sys_drv.h)(0x6A7C1CFD)
+I (../module/drv/sys_drv.h)(0x6A7D7604)
 I (C:\Keil_v5\ARM\ARMCC\include\stdio.h)(0x5E8E3CC2)
 I (C:\Keil_v5\ARM\ARMCC\include\stdlib.h)(0x5E8E3CC2)
 F (../module/usr/encoder_calibrator_usr.h)(0x6A7C095C)()
@@ -1212,3 +1249,10 @@ I (../module/usr/cycle_usr.h)(0x6A7C118D)
 I (C:\Keil_v5\ARM\ARMCC\include\stdint.h)(0x5E8E3CC2)
 I (C:\Keil_v5\ARM\ARMCC\include\stdlib.h)(0x5E8E3CC2)
 F (../module/usr/cycle_usr.h)(0x6A7C118D)()
+F (../module/usr/button_usr.c)(0x6A7D8076)(--c99 -c --cpu Cortex-M3 -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include -I ../module/drv -I ../module/usr -I ../module/test-I.\RTE\_CL_StepMotor-IC:\Users\electronic\AppData\Local\Arm\Packs\ARM\CMSIS\6.1.0\CMSIS\Core\Include-IC:\Users\electronic\AppData\Local\Arm\Packs\Keil\STM32F1xx_DFP\2.2.0\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o cl_stepmotor\button_usr.o --omf_browse cl_stepmotor\button_usr.crf --depend cl_stepmotor\button_usr.d)
+I (../module/usr/button_usr.h)(0x6A7D760B)
+I (C:\Keil_v5\ARM\ARMCC\include\stdint.h)(0x5E8E3CC2)
+I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x5E8E3CC2)
+I (../module/drv/button_drv.h)(0x6A7D760B)
+I (../module/drv/sys_drv.h)(0x6A7D7604)
+F (../module/usr/button_usr.h)(0x6A7D760B)()

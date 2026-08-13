@@ -1,4 +1,4 @@
-﻿/*****************************************************************************
+/*****************************************************************************
  * @文件: led_drv.c
  * @作者: cl
  * @日期: 2026-08-12
@@ -16,7 +16,7 @@
  * @输出 无
  * @说明 点亮/熄灭指定 LED，封装 GPIO 极性差异
  */
-static void s_SetLed(uint8_t id, bool state)
+static void S_SetLed(uint8_t id, bool state)
 {
     GPIO_TypeDef *port;
     uint16_t      pin;
@@ -44,8 +44,8 @@ static void s_SetLed(uint8_t id, bool state)
  */
 void DRV_LED_Init(void)
 {
-    s_SetLed(DRV_LED1, false);
-    s_SetLed(DRV_LED2, false);
+    S_SetLed(DRV_LED1, false);
+    S_SetLed(DRV_LED2, false);
 }
 
 /**
@@ -55,5 +55,5 @@ void DRV_LED_Init(void)
  */
 void DRV_LED_Set(uint8_t id, bool state)
 {
-    s_SetLed(id, state);
+    S_SetLed(id, state);
 }

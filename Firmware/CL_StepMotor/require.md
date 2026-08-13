@@ -80,15 +80,18 @@ Python: C:\Users\electronic\AppData\Local\Programs\Python\Python312\python.exe  
 - [✓] 复刻运行骨架: LED _drv 外设原语 + UART3 _drv 发送 + main.c 挂载打印 System Start!（起 2026-08-12 | 止 2026-08-12 | 验收 2026-08-12 人工验收通过，打印链路验证 OK）<- 优先，先验证链路
 - [✓] 复刻 MT6816: SPI 读绝对角 → 分层 mt6816_drv(原语+偶校验协议) / mt6816_usr(重试+校准映射)（起 2026-08-12 | 止 2026-08-12 | 验收 2026-08-12 人工验收通过）<- 传感（重构：初版照抄已按分层重写）
 - [✓] 复刻 TB67H450: sin_form(→usr) + TIM2 电流 PWM → 分层 drv(原语)/usr(FOC 算法)（起 2026-08-12 | 止 2026-08-12 | 验收 2026-08-12 人工验收通过）<- 执行
-
-> 电机核心环按**工程师思维**（自上而下树主干，环最早贯通、每步可上电验证）重排如下：
-> motion_planner_usr 已提前生成（纯算法孤悬），作为"接入"步骤归位到电机闭环贯通后。
-> **2026-08-12 用户决定**：删除闭环所有内容（motor_usr/configurations_usr），回到 TB67H450 完成基线，后续电机部分由用户自己边学边写（保留定时装配框架 + mt6816）。
-
 - [✓] 定时装配: TIM1 100Hz + TIM4 20kHz 中断启动 + tick 回调（心跳 LED + 20kHz 计数打印）（起 2026-08-12 | 止 2026-08-12 | 验收 2026-08-12 人工验收通过）<- 屋顶，所有 20kHz 算法的节拍源，最先做
 - [✓] 编码器校准: encoder_calibrator 采样→校验→生成校准表写 Flash（CALI 0x08077800）（起 2026-08-12 | 止 2026-08-12 | 验收 2026-08-12 校准表写 Flash 验证通过，result_num=16384 锚点自洽）<- 位置闭环基准
-- [ ] motion_planner 接入: 软启软停叠加（模块已生成，接入已通闭环）（起 2026-08-12 | 止 进行中）
-- [ ] PID/DCE 控制器: 位置/速度闭环（起 2026-08-12 | 止 进行中）
-- [ ] 命令入口: uart_cmd 命令协议 → module/usr/（起 2026-08-12 | 止 进行中）
-- [ ] 参数持久化: stockpile/EEPROM 固化 boardConfig + 校准表（起 2026-08-12 | 止 进行中）<- 调参稳定后收尾
+
+## 2026-08-13
+> 顺序原则：先核心动作（电机闭环）→ 优化（规划）→ 外围（配置/通信）。不做 485（USART1 不用于命令），命令走 CAN（协议做时再定）。
+- [c] 复刻 button: 按键扫描（100Hz tick）→ button_usr（click/long/IsPressed 事件）<- 输入事件源，独立快（起 2026-08-13 | 止 2026-08-13 | 编译 0E/0W，SW1=id1/SW2=id2，100Hz tick + UART3 事件打印已挂）
+- [ ] 复刻 motor 基础闭环: 编码器 raw×25/8 映射 + FOC 电流输出 + 位置/速度/电流命令 + 速度估计 IIR + 基础状态机（P 环，电机能转/能停/能定位）<- 核心动作先跑通
+- [ ] 复刻 motion_planner: 4 tracker（Current/Velocity/Position/Trajectory）20kHz 软目标生成（PositionInterpolator 不移植）<- 加减速优化层
+- [ ] 复刻 motor 完善: 接入 planner + PID/DCE + 超前角补偿 + 完整状态机（过载/堵转/未校准）<- 控制质量与保护
+- [ ] 复刻配置持久化: config_usr（BoardConfig_t/默认值/configStatus）+ eeprom_usr（DATA 0x0807F800 读写/IsValid/Erase）<- 掉电保存
+- [ ] 新增 can_cmd_usr: CAN1（PA11/PA12, 500kbps）命令+应答（协议做时再定，命令对齐参考 c/v/p/s/z/l 语义）<- 替代 485 命令通道
+- [ ] main 装配: 读配置→Motor 注入→100Hz 按键事件/LED/遥测 USART3→20kHz 校准/电机分派→CONFIG_COMMIT/RESTORE<- 完整生命周期
+- [✓] 按键-LED 测试: BTN1→LED1 / BTN2→LED2，短按 toggle 开关，长按闪烁 3 次后恢复记忆状态（验证后删除测试段）（起 2026-08-13 | 止 2026-08-13 | 验收 2026-08-13 按键功能确认 OK，测试段已删除恢复原样，编译 0E/0W）
+- [ ] 遗留加固: USR_EncoderCalibrator_Init 判据过弱（仅查首值）→ 全表扫描校验 <- 低风险独立
 

@@ -614,6 +614,16 @@
               <FileType>5</FileType>
               <FilePath>../module/drv/sys_drv.h</FilePath>
             </File>
+            <File>
+              <FileName>button_drv.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>../module/drv/button_drv.c</FilePath>
+            </File>
+            <File>
+              <FileName>button_drv.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>../module/drv/button_drv.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -668,6 +678,16 @@
               <FileName>cycle_usr.h</FileName>
               <FileType>5</FileType>
               <FilePath>../module/usr/cycle_usr.h</FilePath>
+            </File>
+            <File>
+              <FileName>button_usr.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>../module/usr/button_usr.c</FilePath>
+            </File>
+            <File>
+              <FileName>button_usr.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>../module/usr/button_usr.h</FilePath>
             </File>
           </Files>
         </Group>

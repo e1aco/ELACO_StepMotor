@@ -14,9 +14,12 @@
 extern "C" {
 #endif
 
+#include <stdint.h>
+
 /* ==== 常量定义 ==== */
 /* ==== 接口 ==== */
-void DRV_Sys_SystemReset(void);
+void     DRV_Sys_SystemReset(void);
+uint32_t DRV_Sys_GetTickMs(void);
 
 #ifdef __cplusplus
 }

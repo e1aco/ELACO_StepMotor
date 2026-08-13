@@ -31,6 +31,7 @@
 #include <stdio.h>
 #include "led_drv.h"
 #include "uart_drv.h"
+#include "button_usr.h"
 #include "tb67h450_usr.h"
 #include "mt6816_usr.h"
 #include "encoder_calibrator_usr.h"
@@ -114,24 +115,25 @@ int main(void)
   DRV_LED_Init();
   /* 2. 点亮 LED1 证明系统活着 */
   DRV_LED_Set(DRV_LED1, true);
-  /* 3. 调试回传打印启动信息 */
+  /* 3. 按键初始化：读取初始电平并清空事件 */
+  USR_Button_Init();
+  /* 4. 调试回传打印启动信息 */
   DRV_Uart_SendString("System Start!\r\n");
-  /* 4. TB67H450 驱动初始化：启动 TIM2 PWM(CH3/CH4) + 方向脚全低(不励磁) */
+  /* 5. TB67H450 驱动初始化：启动 TIM2 PWM(CH3/CH4) + 方向脚全低(不励磁) */
   USR_TB67H450_Init();
-  /* 5. MT6816 编码器初始化：读一次角度 */
+  /* 6. MT6816 编码器初始化：读一次角度 */
   USR_MT6816_Init();
-  /* 6. 编码器校准初始化：读 Flash 判断是否已有有效校准表 */
+  /* 7. 编码器校准初始化：读 Flash 判断是否已有有效校准表 */
   USR_EncoderCalibrator_Init();
-  /* 7. 固定小电流演示：电角度 128(45°) @ 200mA，示波器量 PB10/PB11 占空比 */
+  /* 8. 固定小电流演示：电角度 128(45°) @ 200mA，示波器量 PB10/PB11 占空比 */
   /*    警告：电机已接时产生保持力矩，确保轴自由旋转、供电正常 */
   USR_TB67H450_SetFocCurrentVector(128U, 200);
-  /* 8. 启动定时中断：TIM1=100Hz(心跳/慢速任务)、TIM4=20kHz(电机控制 tick) */
+  /* 9. 启动定时中断：TIM1=100Hz(心跳/慢速任务)、TIM4=20kHz(电机控制 tick) */
   HAL_TIM_Base_Start_IT(&htim1);
   HAL_TIM_Base_Start_IT(&htim4);
   DRV_Uart_SendString("Timer tick started!\r\n");
-  /* 9. 上电同按 SW1+SW2 触发编码器校准（复刻参考 main.c Button_IsPressed 双键逻辑） */
-  if ((HAL_GPIO_ReadPin(SW1_GPIO_Port, SW1_Pin) == GPIO_PIN_RESET) &&
-      (HAL_GPIO_ReadPin(SW2_GPIO_Port, SW2_Pin) == GPIO_PIN_RESET))
+  /* 10. 上电同按 SW1+SW2 触发编码器校准（复刻参考 main.c Button_IsPressed 双键逻辑） */
+  if (USR_Button_IsPressed(USR_BUTTON1) && USR_Button_IsPressed(USR_BUTTON2))
   {
       USR_EncoderCalibrator_Trigger();
       DRV_Uart_SendString("Cali triggered!\r\n");
@@ -209,6 +211,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
     if (TIM1 == htim->Instance)
     {
+        /* 100Hz 按键扫描：边沿检测 + 单击/长按事件 */
+        USR_Button_Tick();
+
         /* 100Hz 心跳：LED1 翻转 + 每秒打印 20kHz 计数证明双 tick 在跑 */
         if (++s_tick_100hz_cnt >= 100U)
         {

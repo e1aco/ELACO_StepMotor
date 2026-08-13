@@ -22,3 +22,13 @@ void DRV_Sys_SystemReset(void)
 {
     HAL_NVIC_SystemReset();
 }
+
+/**
+ * @输入 无
+ * @输出 上电以来毫秒数（SysTick 1ms 心跳）
+ * @说明 获取系统 tick，供长按计时等相对时间判断（原语包装 HAL_GetTick）
+ */
+uint32_t DRV_Sys_GetTickMs(void)
+{
+    return HAL_GetTick();
+}

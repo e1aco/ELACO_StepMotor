@@ -53,9 +53,9 @@ static uint16_t *s_cali_table = (uint16_t *)DRV_FLASH_CALI_ADDR;
 /**
  * @输出 无
  * @说明 校验采集数据：方向性/连续性/单跳变点，通过则置 cali_error=0
- * 复刻参考 encoder_calibrator.c CheckData；循环域运算用 cycle_usr 通用函数
+ * 复刻参考 encoder_calibrator.c S_CheckData；循环域运算用 cycle_usr 通用函数
  */
-static void CheckData(void)
+static void S_CheckData(void)
 {
     int32_t sub;
     int32_t step_res = (int32_t)(CALI_ENC_RESOLUTION / CALI_HARD_STEPS);
@@ -149,7 +149,7 @@ static void CheckData(void)
     else
     {
         s_cali_error = 0;
-        sprintf(buf, "CheckData PASS, rcd_x=%ld, rcd_y=%ld\r\n", (long)s_rcd_x, (long)s_rcd_y);
+        sprintf(buf, "S_CheckData PASS, rcd_x=%ld, rcd_y=%ld\r\n", (long)s_rcd_x, (long)s_rcd_y);
         DRV_Uart_SendString(buf);
     }
 }
@@ -157,9 +157,9 @@ static void CheckData(void)
 /**
  * @输出 无
  * @说明 生成校准表：按步距把编码器线性插值成 51200 细分步映射，写入 Flash
- * 复刻参考 encoder_calibrator.c GenerateTable
+ * 复刻参考 encoder_calibrator.c S_GenerateTable
  */
-static void GenerateTable(void)
+static void S_GenerateTable(void)
 {
     int32_t data;
     uint16_t val;
@@ -217,7 +217,7 @@ static void GenerateTable(void)
     }
 
     DRV_Flash_AreaEnd(&g_flash_quick_cali);
-    sprintf(buf, "GenerateTable done, result_num=%lu, cali_table[0]=%u\r\n",
+    sprintf(buf, "S_GenerateTable done, result_num=%lu, cali_table[0]=%u\r\n",
             (unsigned long)s_result_num, (unsigned)s_cali_table[0]);
     DRV_Uart_SendString(buf);
 
@@ -396,12 +396,12 @@ void USR_EncoderCalibrator_TickMainLoop(void)
     USR_TB67H450_Sleep();
 
     /* 校验数据 */
-    CheckData();
+    S_CheckData();
 
     /* 校验通过则生成校准表 */
     if (s_cali_error == 0)
     {
-        GenerateTable();
+        S_GenerateTable();
     }
 
     /* 复位状态 */

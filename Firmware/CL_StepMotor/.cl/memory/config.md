@@ -81,6 +81,14 @@
 - cali_trigger = 上电同按 SW1(PB2)+SW2(PB1)  依据: 复刻参考 main.c 双键触发 + require.md 按键引脚（低有效）  日期: 2026-08-12  来源: 推导
 - cali_table_format = uint16[16384]，index=raw 角度，value=细分步(0~51199)，未校准区=0xFFFF 依据: 参考 encoder_calibrator.c GenerateTable + mt6816_usr 校验逻辑  日期: 2026-08-12  来源: 推导
 
+## Button — 按键事件（SW1=PB2 / SW2=PB1，低有效）
+
+- button_num = 2  依据: 复刻参考 button.c BUTTON_NUM=2 + require.md 引脚映射（SW1/SW2 两键）  日期: 2026-08-13  来源: 推导
+- button_id_map = 1→SW1(PB2) 2→SW2(PB1)  依据: 参考 button.c 用 PB12/PB2，本板 PB12=LED2(输出) 不可作按键，按 require.md 改 SW1=PB2/SW2=PB1  日期: 2026-08-13  来源: 推导
+- button_scan_freq = 100Hz  依据: 参考 main.c Tim1Callback100Hz 调 Button_Tick（TIM1=100Hz 10ms 扫描）  日期: 2026-08-13  来源: 推导
+- button_long_press_ms = 3000  依据: 复刻参考 button.c LONG_PRESS_MS=3000（3s 判长按）  日期: 2026-08-13  来源: 推导
+- button_active_level = 低有效  依据: 复刻参考 button.c ReadPin == GPIO_PIN_RESET 判按下  日期: 2026-08-13  来源: 推导
+
 ## 配置默认值（boardConfig 编译期，EEPROM 持久化后置）
 
 - config_default_can = 2  default_mode = MODE_COMMAND_POSITION  current_limit = 1000mA  依据: 参考 main.c 配置无效分支默认值 + 参考 uart_cmd.c defaultNodeID=2  日期: 2026-08-12  来源: 推导

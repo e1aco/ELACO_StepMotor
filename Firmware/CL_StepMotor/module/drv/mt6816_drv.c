@@ -26,7 +26,7 @@
  * 依据 .cl/datasheet/pages/MT6816CT-ACD.ch00.p020.md: 模式3(CPOL=1,CPHA=1)
  *   数据传输开始于 CSN 下降沿，结束于 CSN 上升沿
  */
-static uint16_t s_SpiXfer16(uint16_t data_tx)
+static uint16_t S_SpiXfer16(uint16_t data_tx)
 {
     uint16_t data_rx = 0;
 
@@ -43,7 +43,7 @@ static uint16_t s_SpiXfer16(uint16_t data_tx)
  * @输出 1=奇数个1(奇校验) 0=偶数个1(偶校验)
  * @说明 计算偶校验位
  */
-static uint8_t s_CalcParity(uint16_t data)
+static uint8_t S_CalcParity(uint16_t data)
 {
     uint8_t count = 0;
     uint8_t i;
@@ -77,12 +77,12 @@ bool DRV_MT6816_ReadAngle(uint16_t *raw_angle, bool *no_mag_flag)
     tx_buf[0] = (uint16_t)((MT6816_READ_BIT | MT6816_CMD_ANGLE) << 8);
     tx_buf[1] = (uint16_t)((MT6816_READ_BIT | MT6816_CMD_RAW_ANGLE) << 8);
 
-    rx_buf[0] = s_SpiXfer16(tx_buf[0]);
-    rx_buf[1] = s_SpiXfer16(tx_buf[1]);
+    rx_buf[0] = S_SpiXfer16(tx_buf[0]);
+    rx_buf[1] = S_SpiXfer16(tx_buf[1]);
 
     raw_data = (uint16_t)(((rx_buf[0] & 0x00FFU) << 8) | (rx_buf[1] & 0x00FFU));
 
-    if (0U != s_CalcParity(raw_data))
+    if (0U != S_CalcParity(raw_data))
     {
         return false;
     }
@@ -105,5 +105,5 @@ bool DRV_MT6816_ReadAngle(uint16_t *raw_angle, bool *no_mag_flag)
  */
 uint16_t DRV_MT6816_TestRead(void)
 {
-    return s_SpiXfer16((uint16_t)((MT6816_READ_BIT | MT6816_CMD_ANGLE) << 8));
+    return S_SpiXfer16((uint16_t)((MT6816_READ_BIT | MT6816_CMD_ANGLE) << 8));
 }

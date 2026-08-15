@@ -31,8 +31,22 @@ static uint16_t S_SpiXfer16(uint16_t data_tx)
     uint16_t data_rx = 0;
 
     HAL_GPIO_WritePin(SPI_CS_GPIO_Port, SPI_CS_Pin, GPIO_PIN_RESET);
-    HAL_SPI_TransmitReceive(&hspi1, (uint8_t *)&data_tx,
-                            (uint8_t *)&data_rx, 1, HAL_MAX_DELAY);
+    /* 寄存器级轮询：写 DR 后等 RXNE，规避 HAL_SPI_TransmitReceive 逐调用状态检查开销
+     * （T3 超预算调参 2026-08-15：HAL 路径 28µs → 寄存器路径预期 ~5µs）
+     * 依据 .cl/datasheet/pages/MT6816CT-ACD.ch00.p020.md: 模式3(CPOL=1,CPHA=1)
+     *   数据传输开始于 CSN 下降沿，结束于 CSN 上升沿；全双工写 DR 即触发移位接收
+     * 注意：必须先置 SPE 使能外设（HAL_SPI_TransmitReceive 内部每次调用前也会
+     *   __HAL_SPI_ENABLE，2026-08-15 实测缺此行导致 SCK 不产生、RXNE 永不置位死循环）
+     */
+    if (0U == (SPI1->CR1 & SPI_CR1_SPE))
+    {
+        SPI1->CR1 |= SPI_CR1_SPE;
+    }
+    SPI1->DR = data_tx;
+    while (0U == (SPI1->SR & SPI_SR_RXNE))
+    {
+    }
+    data_rx = (uint16_t)SPI1->DR;
     HAL_GPIO_WritePin(SPI_CS_GPIO_Port, SPI_CS_Pin, GPIO_PIN_SET);
 
     return data_rx;

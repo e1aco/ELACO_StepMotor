@@ -36,6 +36,7 @@
 #include "mt6816_usr.h"
 #include "encoder_calibrator_usr.h"
 #include "motor_usr.h"
+#include "tim_test.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -61,9 +62,9 @@ static Motor_Config_T s_motor_config = {
     .encoderHomeOffset = 0,
     .ratedCurrent = 2000,                          /* 电流限幅 2000mA（42 步进额定 2A） */
     .ratedVelocity = 2 * USR_MOTOR_SUBDIVIDE_STEPS, /* 速度限幅 2圈/s（步进低速区间，防失步） */
-    .dceKp = 200,                                  /* 位置 P 环默认增益 200 */
-    .dceKd = 400,                                  /* 位置环速度阻尼增益 400（实测：250 阻尼不足仍有极限环） */
-    .pidKp = 5,                                    /* 速度 P 环默认增益 5 */
+    .posKp = 32768,                                /* 位置环增益 32（128 实测：减速窗口缩至 672 步<滑行 512→冲过目标；32→窗口 3072 步，MIN_VEL 已解死区边缘拉锯） */
+    .pidKp = 10,                                   /* 速度环增益 10（5 实测堵转输出上限 636mA 推不动齿隙摩擦→卡死；10→1270mA 冲破；MIN_VEL 防假速度拉锯） */
+    .pidKd = 400,                                  /* 速度环阻尼 400（8/13 已验证；800 实测饱和成 bang-bang 激励振荡） */
 };
 /* USER CODE END PV */
 
@@ -78,6 +79,12 @@ void SystemClock_Config(void);
 /* 定时心跳计数（中断回调内维护） */
 static volatile uint32_t s_tick_20khz_cnt = 0;  /* 20kHz tick 计数 */
 static uint32_t s_tick_100hz_cnt = 0;           /* 100Hz tick 计数 */
+/* 遥测/按键事件消息缓冲：ISR 内格式化，主循环发送
+ * （避免 ISR 内 sprintf 浮点 + 阻塞串口发送，T2 超预算调参 2026-08-15） */
+static char s_tele_buf[96];
+static volatile uint8_t s_tele_ready = 0;
+static char s_key_buf[24];
+static volatile uint8_t s_key_ready = 0;
 /* USER CODE END 0 */
 
 /**
@@ -120,7 +127,9 @@ int main(void)
   MX_USART3_UART_Init();
   MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
-  /* 1. LED 状态指示初始化 */
+  /* 1. 时序测量初始化（宏版本；生产版空实现） */
+  TEST_TIM_Init();
+  /* 2. LED 状态指示初始化 */
   DRV_LED_Init();
   /* 2. 点亮 LED1 证明系统活着 */
   DRV_LED_Set(DRV_LED1, true);
@@ -156,6 +165,20 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+    /* 时序测量回传 + T4 ADC 采样序列（宏版本；生产版空实现） */
+    TEST_TIM_Report();
+    TEST_TIM_AdcSampleTask();
+    /* 按键事件/遥测消息发送（ISR 只格式化，发送在主循环） */
+    if (s_key_ready)
+    {
+        s_key_ready = 0;
+        DRV_Uart_SendString(s_key_buf);
+    }
+    if (s_tele_ready)
+    {
+        s_tele_ready = 0;
+        DRV_Uart_SendString(s_tele_buf);
+    }
     /* 编码器校准主循环任务（校准完成时校验数据并写 Flash） */
     USR_EncoderCalibrator_TickMainLoop();
   }
@@ -224,31 +247,37 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         USR_Button_Tick();
 
         /* 100Hz 按键测试：验证电机闭环（单击/长按事件驱动命令，测试段验收后删） */
-        char buf[40];
         if (USR_Button_GetClick(USR_BUTTON1))
         {
             if (USR_Motor_GetMode() != MODE_STOP)
             {
                 USR_Motor_SetMode(MODE_STOP);
-                DRV_Uart_SendString("MODE_STOP\r\n");
+                sprintf(s_key_buf, "MODE_STOP\r\n");
+                s_key_ready = 1;
             }
             else
             {
                 USR_Motor_SetMode(MODE_COMMAND_POSITION);
-                DRV_Uart_SendString("MODE_POSITION\r\n");
+                sprintf(s_key_buf, "MODE_POSITION\r\n");
+                s_key_ready = 1;
             }
         }
+        /* 100Hz 按键测试：SW2 循环目标 90°→180°→270°→360°→90°（全程测试） */
+        static uint8_t s_deg_idx = 3U;   /* 初值 3：首次按 SW2 → (3+1)%4=0 → 90° */
         if (USR_Button_GetClick(USR_BUTTON2))
         {
-            USR_Motor_SetPosition(51200 / 4);  /* 目标位置 1/4 圈=90° */
-            DRV_Uart_SendString("POS_90deg\r\n");
+            s_deg_idx = (s_deg_idx + 1U) % 4U;
+            USR_Motor_SetPosition((int32_t)12800 * (s_deg_idx + 1U));
+            sprintf(s_key_buf, "POS_%u\r\n", (unsigned)(90U * (s_deg_idx + 1U)));
+            s_key_ready = 1;
         }
         if (USR_Button_GetLong(USR_BUTTON2))
         {
             USR_Motor_SetPosition(0);
             USR_Motor_SetVelocity(0);
             USR_Motor_SetCurrent(0);
-            DRV_Uart_SendString("STOP\r\n");
+            sprintf(s_key_buf, "STOP\r\n");
+            s_key_ready = 1;
         }
         if (USR_Button_GetLong(USR_BUTTON1))
         {
@@ -256,17 +285,33 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
             HAL_NVIC_SystemReset();
         }
 
-        /* 100Hz 遥测：位置/速度/电流/模式/状态（10 次=100ms 一次） */
+        /* 100Hz 遥测：位置/速度/电流/模式/状态（10 次=100ms 一次）
+         * 定点化打印（×1000 拆整数/小数），避免软件浮点 %f（无 FPU 开销大） */
         static uint8_t s_tele_cnt = 0;
         if (++s_tele_cnt >= 10U)
         {
             s_tele_cnt = 0U;
             float pos, vel, cur;
             uint8_t mode, state;
+            long p, v, c;
+            unsigned raw, rec;
+            long rp, rv, rd;
             USR_Motor_GetTelemetry(&pos, &vel, &cur, &mode, &state);
-            sprintf(buf, "T:%.3f,%.3f,%.3f,%u,%u\r\n",
-                    pos, vel, cur, (unsigned)mode, (unsigned)state);
-            DRV_Uart_SendString(buf);
+            p = (long)(pos * 1000.0f);
+            v = (long)(vel * 1000.0f);
+            c = (long)(cur * 1000.0f);
+            raw = (unsigned)USR_MT6816_GetRawAngle();
+            rec = (unsigned)USR_MT6816_GetRectifiedAngle();
+            rp = (long)USR_Motor_GetRawPosition();
+            rv = (long)USR_Motor_GetRawVelocity();
+            rd = (long)USR_Motor_GetRawDelta();
+            sprintf(s_tele_buf, "T:%ld.%03ld,%ld.%03ld,%ld.%03ld,%u,%u,%u,%u,%ld,%ld,%ld\r\n",
+                    p / 1000, (p % 1000 < 0) ? -(p % 1000) : (p % 1000),
+                    v / 1000, (v % 1000 < 0) ? -(v % 1000) : (v % 1000),
+                    c / 1000, (c % 1000 < 0) ? -(c % 1000) : (c % 1000),
+                    (unsigned)mode, (unsigned)state, raw, rec,
+                    rp, rv, rd);
+            s_tele_ready = 1;
         }
 
         /* 100Hz 心跳：LED1 翻转 */

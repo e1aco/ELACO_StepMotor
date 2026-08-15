@@ -43,6 +43,7 @@
 "cl_stepmotor\cycle_usr.o"
 "cl_stepmotor\button_usr.o"
 "cl_stepmotor\motor_usr.o"
+"cl_stepmotor\tim_test.o"
 --strict --scatter "CL_StepMotor\CL_StepMotor.sct"
 --summary_stderr --info summarysizes --map --load_addr_map_info --xref --callgraph --symbols
 --info sizes --info totals --info unused --info veneers

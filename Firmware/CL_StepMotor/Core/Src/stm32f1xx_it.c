@@ -22,6 +22,7 @@
 #include "stm32f1xx_it.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "tim_test.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -340,10 +341,12 @@ void CAN1_SCE_IRQHandler(void)
 void TIM1_UP_IRQHandler(void)
 {
   /* USER CODE BEGIN TIM1_UP_IRQn 0 */
+  TEST_TM_START(TIM1_ISR);   /* T2: 100Hz 遥测 ISR 总耗时测量起点 */
 
   /* USER CODE END TIM1_UP_IRQn 0 */
   HAL_TIM_IRQHandler(&htim1);
   /* USER CODE BEGIN TIM1_UP_IRQn 1 */
+  TEST_TM_STOP(TIM1_ISR);    /* T2: 测量终点 */
 
   /* USER CODE END TIM1_UP_IRQn 1 */
 }
@@ -368,10 +371,12 @@ void TIM3_IRQHandler(void)
 void TIM4_IRQHandler(void)
 {
   /* USER CODE BEGIN TIM4_IRQn 0 */
+  TEST_TM_START(TIM4_ISR);   /* T1: 20kHz 电机闭环 ISR 总耗时测量起点 */
 
   /* USER CODE END TIM4_IRQn 0 */
   HAL_TIM_IRQHandler(&htim4);
   /* USER CODE BEGIN TIM4_IRQn 1 */
+  TEST_TM_STOP(TIM4_ISR);    /* T1: 测量终点 */
 
   /* USER CODE END TIM4_IRQn 1 */
 }

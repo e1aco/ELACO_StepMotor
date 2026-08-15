@@ -43,6 +43,7 @@
 - mt6816_parity = 偶数校验（1 表示数据奇校验失败）  依据: 复刻参考 mt6816.c CalcParity==0 通过  日期: 2026-08-12  来源: 推导
 - mt6816_no_mag = bit1（无磁场标志）  依据: 复刻参考 mt6816.c  日期: 2026-08-12  来源: 推导
 - encoder_power_monitor = PA0 ADC1_IN0（POW_MT6816）  依据: require.md 引脚映射（编码器供电监测）  日期: 2026-08-12  来源: 推导
+- mt6816_spi_spe_enable = 寄存器级传输前必须先置 SPE(CR1 bit6=0x40)；F103 HAL_SPI_TransmitReceive 每次调用前自动 __HAL_SPI_ENABLE 兜底，手写寄存器版漏掉则 SCK 不产生、RXNE 永不置位、死循环（写 DR 无效且 DR 读回 0 是铁证）  依据: 2026-08-15 /cl tim T3 调参实测（HAL 28µs→寄存器 12µs，缺 SPE 时首次读角度卡死）  日期: 2026-08-15  来源: 实测
 
 ## USART — 调试回传与命令（复刻参考用 USART1 DMA，本项目调试回传 USART3）
 
@@ -104,9 +105,10 @@
 - motor_enc_raw_scale = ×25/8 (51200/16384)  依据: 未校准(选项B) raw 14bit(0~16383) 线性缩放进 51200 细分步空间；校准后由校准表接管（表输出即 51200 空间）  日期: 2026-08-12  来源: 推导
 - motor_foc_lead_90 = SOFT_DIVIDE_NUM=256  依据: 参考 motor.c CalcCurrentToOutput 正电流超前/负电流滞后 90°（细分步）  日期: 2026-08-12  来源: 推导
 - motor_compensate_angle = 分段补偿 |±430| 步  依据: 参考 motor.c CompensateAdvancedAngle（vel 阈值 100k/1.3M/2.2M，斜率 262/105/52>>20）  日期: 2026-08-12  来源: 推导
-- motor_minloop_control = 简单 P 环 current=Kp×err>>10 限 ±ratedCurrent（Kp=dce_kp=200, err 限 ±3200）  依据: 参考 DCE 输出量纲（kp×pError>>10），暂未接 PID/DCE 任务6  日期: 2026-08-12  来源: 推导
-- motor_loop_damping = dceKd=400 速度阻尼 out=(Kp×err−Kd×(vel>>7))>>10，vel>>7 限 ±4000  依据: 实测整定——纯 P 无阻尼极限环震动；Kd=250 不足、400 收敛；对齐参考 CalcDceToOutput vError 量纲  日期: 2026-08-13  来源: 实测决策
-- motor_loop_deadband_off = 到位死区 POS_DEADBAND=128 细分步(≈0.9°) 内输出直接归零（P+Kd 全停）  依据: 实测——到位后 FOC 电流引起编码器微抖被速度 IIR 放大成假速度→Kd 响应出电流→极限环；STOP 模式 cur=0 时 vel 恒 0 证实电流是抖源；死区输出归零=移除抖源  日期: 2026-08-13  来源: 实测决策
+- motor_minloop_control = 串级双环：位置环 err→速度目标（posKp=32768×err>>10 限±ratedVelocity）→ 速度环 err→电流（pidKp=5×err>>10 限±ratedCurrent）  依据: 位置环标定 err=3200(POS_ERR_MAX)→额定速度 102400(2圈/s)：32768×3200>>10=102400；速度环保留参考 pid.kp=5 作起点（待实测整定）；位置环不再混合 Kd（阻尼职责移交速度环，参考 motor.c CalcPidToOutput 量纲）  日期: 2026-08-15  来源: 推导
+- motor_cascade_poskp = 32768  依据: 串级外环标定：误差满量程 POS_ERR_MAX=3200 细分步→速度目标达 ratedVelocity=102400 细分步/s（2圈/s），32768×3200>>10=102400  日期: 2026-08-15  来源: 推导
+- motor_loop_damping = 速度环承担（pidKp×err 即阻尼；dceKd=400 退役——串级后速度误差→电流已含刹停，无需位置环混合 Kd）  依据: 8/13 实测 dceKd=400 收敛，串级重构将阻尼职责移交速度环，等效开环增益 posKp×pidKp>>10=160 ≈ 原 dceKp=200 同量级  日期: 2026-08-15  来源: 实测决策
+- motor_loop_deadband_off = 到位死区 POS_DEADBAND=128 细分步(≈0.9°) 内**输出直接归零、跳过速度环**（S_CalcCurrentToOutput(0) 保 FOC 相位）  依据: 8/15 串级实测——死区内速度环吃编码器微抖（±1count 交替→IIR 输出±1.2 圈/s 假速度）→±0.3A 电流→自激极限环，pos 卡死区外 0.244 不收敛；改输出归零后到位 FINISH 全零稳定（0.248,0.72°偏差）；vel 死区 512 步/s 方案 8/15 第1轮实测无效（噪声 66k 步/s 超阈值百倍）；8/13 同款结论复证  日期: 2026-08-15  来源: 实测决策
 - motor_est_vel_filter = IIR 低通系数 1/32（integral += Δpos×20kHz + (v<<5 - v), v=integral>>5）  依据: 参考 motor.c 速度估计  日期: 2026-08-12  来源: 推导
 - motor_state_min = STOP/RUNNING/FINISH（最小闭环无过载/堵转/未校准检测，任务6后补）  依据: 参考 motor.c 状态机裁剪  日期: 2026-08-12  来源: 推导
 - motor_pos_deadband = 128 细分步（≈0.9°）  motor_vel_deadband = 512 细分步/s  motor_cur_deadband = 10mA  依据: 最小闭环无 planner，软目标=目标，需自判到位（参考靠 planner 平滑+soft==goal 判 FINISH，最小闭环改用死区判据）；死区内输出归零  日期: 2026-08-13  来源: 推导+实测（2026-08-13 精度实测 pos 稳定 0.248 vs 目标 0.250 → 偏差 0.002 圈≈0.72° < 死区 0.9°）

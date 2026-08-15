@@ -703,6 +703,18 @@
         </Group>
         <Group>
           <GroupName>module/test</GroupName>
+          <Files>
+            <File>
+              <FileName>tim_test.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>../module/test/tim_test.c</FilePath>
+            </File>
+            <File>
+              <FileName>tim_test.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>../module/test/tim_test.h</FilePath>
+            </File>
+          </Files>
         </Group>
         <Group>
           <GroupName>::CMSIS</GroupName>

@@ -33,3 +33,4 @@ cl_stepmotor\stm32f1xx_it.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_t
 cl_stepmotor\stm32f1xx_it.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h
 cl_stepmotor\stm32f1xx_it.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h
 cl_stepmotor\stm32f1xx_it.o: ../Core/Inc/stm32f1xx_it.h
+cl_stepmotor\stm32f1xx_it.o: ../module/test/tim_test.h

@@ -83,3 +83,28 @@
 - **最终方案**: require.md 任务 88/89 验收通过，回填时间
 - **验证结果**: require.md 2026-08-13 组 button/motor 两 [✓]；遗留：motion_planner(90)/motor完善(91)/配置持久化(92)/can_cmd(93)/main装配/校准Init加固
 - **经验引用**: 无新节点（调参节点已在验收前一记录沉淀）
+
+## [2026-08-15] 任务: Saleae 逻辑分析仪自动化调试（LED2 翻转 50Hz 方波实测）
+- **模式**: /cl code 手动调试接管（测试段，验证后已删除恢复原状）
+- **现象**: 需验证 Saleae 逻辑分析仪自动化链路（捕获→导出→解析）；TIM1 100Hz 中断内翻转 LED2(PB12) 作 50Hz 方波测试信号
+- **尝试**:
+  - 第1轮: Logic.exe --help 探 CLI → 失败（Electron GUI，无 CLI）
+  - 第2轮: saleae_extract.py detect → 无 CLI → 官方方案改为 logic2-automation 包（pip install）→ 自动化成功：--launch 启动 Logic 2 → 捕获 → export_raw_data_csv → digital.csv
+  - 第3轮: 设备报错降级重试链——digital_threshold_volts 该设备不可配（降级不传）→ 采样率 10MHz 不在允许表（自动解析报错选 24MHz）→ 通道 8 不可用（8 通道设备仅 0-7，全开 0-7 捕获后逐列分析）
+  - 第4轮: 板子未独立供电时信号恒高 → flash.py --reset 复位后正常
+- **验证结果**: 50Hz 方波确认（半周期 10.0ms 与理论吻合，210 跳变/2s）；**顺带发现 TIM1 中断遥测（sprintf 浮点+阻塞串口发送）使中断最长 ~2.3ms，LED2 翻转抖动 ±2.3ms（100Hz 中断占空 ~23%，20kHz 电机闭环受影响风险，待修）**；测试段已删除恢复原状，编译 0E/0W，烧录确认
+- **经验引用**: 已沉淀 knowledge/saleae_logic2.md（Saleae 自动化经验：无 CLI、logic2-automation 包+端口 10430、设备能力降级链、USB 识别故障排查）
+
+## [2026-08-15] 任务: /cl tim 时序实测（T1-T4 全达标）
+- **模式**: /cl tim（测量闭环）
+- **现象**: require.md 时序测量表 T1-T4 待测；T3（MT6816 SPI 读）HAL 路径 28µs 超 15µs 预算
+- **尝试**:
+  - T1 TIM4 20kHz ISR: 37µs ≤ 50µs ✅；T2 TIM1 100Hz ISR: 2262µs 超限 → 调参（%f 定点化 ×1000 拆分 + 发送移主循环）→ 86µs ≤ 1000µs ✅
+  - T3 调参第1轮: HAL_SPI_TransmitReceive → 寄存器级写 DR 等 RXNE → **烧录后串口无数据、复位后卡死在首次读角度**
+  - 死循环诊断: pyocd halt → PC 在 RXNE 等待循环; **SPI1 CR1=0xB17 位分解——F103 CR1 位定义 SPE=bit6(0x40)，0xB17 无 SPE → 外设从未使能**；HAL 版每次调用前 `__HAL_SPI_ENABLE`（hal_spi.c:2023-2026）兜底，寄存器版漏掉 → SCK 不产生、RXNE 永不置位
+  - 修复: 写 DR 前补 `if (0==(CR1&SPI_CR1_SPE)) CR1|=SPI_CR1_SPE` → T3 12µs ≤ 15µs ✅（HAL 28µs → 寄存器 12µs）
+  - T4 ADC 采样（HAL Start+Poll 临时触发）: 27µs ≤ 29µs ✅
+- **手动调试记录**: 死循环期间用户配合复位/观察串口；pyocd commander 手动写寄存器实验（写 DR 无效=SPE=0 铁证）
+- **最终方案**: T3 保留寄存器级实现 + SPE 前置使能；其余保持
+- **验证结果**: T1 37µs / T2 86µs / T3 12µs / T4 27µs 全部 ≤ 预算；require.md 时序表 4 条 [x]；编译 0E/0W 烧录确认
+- **经验引用**: 应沉淀 knowledge/mt6816.md 或 spi 知识节点——F103 SPI 寄存器级传输必须先置 SPE(bit6)，HAL 的 TransmitReceive 每次调用前自动使能；排障技巧：SPE=0 时写 DR 无效、SCK 不产生、RXNE 永不置位（死循环症状）

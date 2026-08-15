@@ -9,6 +9,7 @@
  ****************************************************************************/
 #include "mt6816_usr.h"
 #include "mt6816_drv.h"
+#include "tim_test.h"
 #include <stddef.h>
 
 /* ==== 常量定义 ==== */
@@ -49,6 +50,8 @@ uint16_t USR_MT6816_UpdateAngle(void)
     uint8_t i;
     bool parity_ok = false;
 
+    TEST_TM_START(MT6816_READ);   /* T3: SPI 单次读（含重试）测量起点 */
+
     for (i = 0; i < MT6816_RETRY_MAX; i++)
     {
         if (DRV_MT6816_ReadAngle(&s_raw_angle, NULL))
@@ -70,6 +73,8 @@ uint16_t USR_MT6816_UpdateAngle(void)
             s_rectified_angle = s_raw_angle;
         }
     }
+
+    TEST_TM_STOP(MT6816_READ);    /* T3: 测量终点 */
 
     return s_rectified_angle;
 }

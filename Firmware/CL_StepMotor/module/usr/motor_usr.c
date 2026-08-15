@@ -3,15 +3,16 @@
  * @作者: cl
  * @日期: 2026-08-13
  * @版本: v1.0
- * @说明: 电机用户层（最小闭环：编码器 raw×25/8 映射 + FOC 电流输出 +
- *   位置/速度/电流命令 + IIR 速度估计 + 简单 P 环状态机 STOP/FINISH/RUNNING）
+ * @说明: 电机用户层（串级闭环：编码器 raw×25/8 映射 + 位置环→速度环→电流 +
+ *   位置/速度/电流命令 + IIR 速度估计 + 状态机 STOP/FINISH/RUNNING）
  * @平台: STM32F103RET6
- * @依赖: mt6816_usr, tb67h450_usr, encoder_calibrator_usr
+ * @依赖: mt6816_usr, tb67h450_usr, encoder_calibrator_usr, cycle_usr
  ****************************************************************************/
 #include "motor_usr.h"
 #include "mt6816_usr.h"
 #include "tb67h450_usr.h"
 #include "encoder_calibrator_usr.h"
+#include "cycle_usr.h"
 #include <stddef.h>
 
 /* ==== 常量定义 ==== */
@@ -32,6 +33,8 @@ static int32_t s_real_lap_position = 0;      /* 单圈位置（0~51199） */
 static int32_t s_real_lap_position_last = 0;
 static int32_t s_real_position = 0;          /* 累计位置（多圈） */
 static int32_t s_real_position_last = 0;
+static int32_t s_delta_sum = 0;              /* 周期累计位置增量（100ms 遥测清零） */
+static int32_t s_vel_last = 0;               /* 上一帧速度估计（速度环阻尼用） */
 
 /* 估计量 */
 static int32_t s_est_velocity = 0;           /* 估计速度（细分步/s） */
@@ -122,31 +125,77 @@ static void S_CalcCurrentToOutput(int32_t current)
 /**
  * @输入 goal_pos: 目标位置（细分步）
  * @输出 无
- * @说明 位置环：|err|≤死区 → 输出 0（到位断电不驱动，避免 FOC 电流引起编码器微抖
- *   被速度估计放大成极限环；实测 STOP 模式 cur=0 时 vel 恒 0）；死区外 →
- *   P 项死区映射 + Kd 速度阻尼 → current=(Kp×err−Kd×v)>>10，err 限 ±3200，
- *   v=估计速度>>7 限 ±4000，输出限 ±ratedCurrent
- * 依据 .cl/memory/ motor_pos_deadband=128 + motor_minloop_control Kp=dce_kp=200
- *   + config_default_pid dce_kd=400（实测整定）+ 参考 motor.c CalcDceToOutput 量纲
+ * @说明 位置环（串级外环）：|err|≤死区 → 速度目标 0（速度环刹停残余速度，静止时
+ *   输出≈0 等价归零，避免 FOC 电流引起编码器微抖被速度估计放大成极限环）；
+ *   死区外 → P 项死区映射 → 速度目标=(posKp×err)>>10，限 ±ratedVelocity（串级限速，
+ *   位置环不再混合 Kd——阻尼职责移交速度环）→ 调 S_CalcVelocityP 内环输出电流
+ * 依据 .cl/memory/ motor_pos_deadband=128 + motor_cascade_poskp=32768
+ *   + config_default_pid pid_kp=5（待实测整定）+ 参考 motor.c CalcPidToOutput 量纲
  */
-static void S_CalcPositionP(int32_t goal_pos)
+static void S_CalcVelocityP(int32_t goal_vel);   /* 前向声明（内环定义在外环之后） */
+
+/* vel_goal 上一帧值（限斜率用，外环静态状态） */
+static int32_t s_vel_goal_last = 0;
+/* 死区状态（滞回）：1=死区外驱动中，0=死区内归零。
+   出界触发驱动，回中心（|err|<HYST）才归零 → 防边缘漂移极限环 */
+static uint8_t s_db_active = 0U;
+/* 死区制动倒计时（帧）：进入死区后先刹停残余速度（过冲小）再 0 电流。
+   8/15 实测：保持力电流 → 编码器磁干扰 → 假速度 ±100000 → 位置环误判
+   → 摆动 ±260（180° 段）；0 电流无磁干扰但残余速度滑行过冲；
+   一次性制动（有限帧）→ 无持续速度环 → 无假速度自激 */
+static uint16_t s_db_brake_cnt = 0U;
+
+static void S_CalcPositionCascade(int32_t goal_pos)
 {
     int32_t err = goal_pos - s_est_position;
-    int32_t v_err;
-    int32_t out;
+    int32_t vel_goal;
+    int32_t deadband = (int32_t)USR_MOTOR_POS_DEADBAND;
 
-    /* 到位死区：输出 0，P/Kd 均不作用（无电流→无微抖→无极限环） */
-    if ((err > (int32_t)USR_MOTOR_POS_DEADBAND)
-            || (err < -(int32_t)USR_MOTOR_POS_DEADBAND))
+    /* 绕回窗口内死区加大（128→256）：0° 处弹性/毛刺摆动 ±250 > 128 →
+       频繁出界驱动 → 摆动自激（8/15 MODE_POSITION 实测 33 行）；
+       256 吞掉摆动 → 不出界不驱动 → 自由衰减静止 */
+    if ((goal_pos > ((int32_t)USR_MOTOR_SUBDIVIDE_STEPS - (int32_t)USR_MOTOR_POS_WRAP_WIN))
+            && (goal_pos < ((int32_t)USR_MOTOR_SUBDIVIDE_STEPS + (int32_t)USR_MOTOR_POS_WRAP_WIN)))
     {
-        /* 死区映射：>死区 → 超出部分驱动 */
-        if (err > (int32_t)USR_MOTOR_POS_DEADBAND)
+        deadband = (int32_t)USR_MOTOR_POS_DEADBAND_WRAP;
+    }
+
+    if (s_db_active != 0U)
+    {
+        /* 归零窗口：err ∈ [+HYST, +DEADBAND]（目标下方 16~死区 步）。
+           BUG 记录（8/15）：原对称归零 |err|<16 → 归零后机械正向回弹
+           （齿隙弹性恒 +123 步）恒出界 → 推回量≡回弹量恒等平衡 → 极限环
+           （180° 实测 26 行 25609↔25766）；目标下方归零 → 正向回弹把
+           位置带回死区中心 → 一次收敛 */
+        if ((err >= (int32_t)USR_MOTOR_POS_DB_HYST)
+                && (err <= deadband))
         {
-            err -= (int32_t)USR_MOTOR_POS_DEADBAND;
+            s_db_active = 0U;
+            s_db_brake_cnt = USR_MOTOR_POS_DB_BRAKE_MS;   /* 进入死区：先刹停残余速度 */
+        }
+    }
+    else if ((err > deadband)
+            || (err < -deadband))
+    {
+        s_db_active = 1U;
+    }
+
+    if (s_db_active != 0U)
+    {
+        /* 死区映射：出界 → 削死区（保持符号）；滞回残留（|err|≤死区）→ 0。
+           BUG 记录（8/15）：残留区 err+128 翻转符号（err=-18→+110）被 MIN_VEL
+           钳位放大成反向猛推 → 0°/90° 到位摆动极限环（实测 17~23 行） */
+        if (err > deadband)
+        {
+            err -= deadband;
+        }
+        else if (err < -deadband)
+        {
+            err += deadband;
         }
         else
         {
-            err += (int32_t)USR_MOTOR_POS_DEADBAND;
+            err = 0;
         }
 
         if (err > (int32_t)USR_MOTOR_POS_ERR_MAX)
@@ -158,38 +207,102 @@ static void S_CalcPositionP(int32_t goal_pos)
             err = -(int32_t)USR_MOTOR_POS_ERR_MAX;
         }
 
-        /* 速度阻尼：目标速度 0（位置保持），vError=(0−est_vel)>>7，限 ±4000 */
-        v_err = s_est_velocity >> 7;
-        if (v_err > (int32_t)USR_MOTOR_VEL_ERR_DAMP_MAX)
+        /* 位置环：误差→速度目标（串级外环输出限幅=内环额定速度） */
+        vel_goal = (s_config->posKp * err) >> 10;
+        if (vel_goal > s_config->ratedVelocity)
         {
-            v_err = (int32_t)USR_MOTOR_VEL_ERR_DAMP_MAX;
+            vel_goal = s_config->ratedVelocity;
         }
-        else if (v_err < -(int32_t)USR_MOTOR_VEL_ERR_DAMP_MAX)
+        else if (vel_goal < -s_config->ratedVelocity)
         {
-            v_err = -(int32_t)USR_MOTOR_VEL_ERR_DAMP_MAX;
+            vel_goal = -s_config->ratedVelocity;
         }
 
-        out = ((s_config->dceKp * err) - (s_config->dceKd * v_err)) >> 10;
+        /* 死区外最小推进速度钳位：仅远离死区（|err|>减速窗口）强制 MIN_VEL 推进；
+           减速窗口内不钳 → vel_goal=32×err 线性下坡（限斜率整形）→ 低速进入
+           死区（~8192@死区边缘）→ 落点无过冲无摆动。
+           BUG 记录（8/15）：原 err≠0 全区间钳位 30000 → 30000 冲入死区 → 过冲
+           ±150~250 → 弹性摆动自持（90° 24 行 / 0° 33 行，到位抖动大）；
+           vel_goal < 假速度（±25000）会被速度环假速度主导 → 但减速窗口内
+           位置带动能低速接近（动摩擦小）→ 实测无卡死。
+           目标在编码器 0 点绕回窗口内 → 读数毛刺假速度 ±40000 → 用 WRAP 档 */
+        if ((err != 0)
+                && ((err > (int32_t)USR_MOTOR_POS_MIN_VEL_DS)
+                    || (err < -(int32_t)USR_MOTOR_POS_MIN_VEL_DS)))
+        {
+            int32_t min_vel = (int32_t)USR_MOTOR_POS_MIN_VEL;
+            if ((goal_pos > ((int32_t)USR_MOTOR_SUBDIVIDE_STEPS - (int32_t)USR_MOTOR_POS_WRAP_WIN))
+                    && (goal_pos < ((int32_t)USR_MOTOR_SUBDIVIDE_STEPS + (int32_t)USR_MOTOR_POS_WRAP_WIN)))
+            {
+                min_vel = (int32_t)USR_MOTOR_POS_MIN_VEL_WRAP;
+            }
+
+            if ((vel_goal >= 0) && (vel_goal < min_vel))
+            {
+                vel_goal = min_vel;
+            }
+            else if ((vel_goal < 0) && (vel_goal > -min_vel))
+            {
+                vel_goal = -min_vel;
+            }
+        }
+
+        /* 输出限斜率（简易轨迹整形）：vel_goal 每帧变化 ≤ ACC，
+           长行程满速冲入改为受控加减速 → 到位速度≈0 → 无过冲振荡 */
+        int32_t dv = vel_goal - s_vel_goal_last;
+        if (dv > (int32_t)USR_MOTOR_VEL_GOAL_ACC)
+        {
+            vel_goal = s_vel_goal_last + (int32_t)USR_MOTOR_VEL_GOAL_ACC;
+        }
+        else if (dv < -(int32_t)USR_MOTOR_VEL_GOAL_ACC)
+        {
+            vel_goal = s_vel_goal_last - (int32_t)USR_MOTOR_VEL_GOAL_ACC;
+        }
+        s_vel_goal_last = vel_goal;
     }
     else
     {
-        out = 0;
+        /* 归零：先一次性制动（刹停残余速度 → 过冲小），后 0 电流（衰减微振）。
+           BUG 记录（8/15）：保持力电流 → 编码器磁干扰 → 假速度 ±100000 →
+           位置环误判 → 摆动 ±260（180° 段）→ 删除保持力；
+           0 电流无磁干扰，但残余速度滑行过冲 → 制动 10ms 刹停；
+           绕回窗口（目标≈编码器 0 点）直接 0 电流（0° 毛刺假速度 ±40000
+           会让制动输出波动推位置 → 摆动，实测 0 电流衰减收敛） */
+        if ((goal_pos > ((int32_t)USR_MOTOR_SUBDIVIDE_STEPS - (int32_t)USR_MOTOR_POS_WRAP_WIN))
+                && (goal_pos < ((int32_t)USR_MOTOR_SUBDIVIDE_STEPS + (int32_t)USR_MOTOR_POS_WRAP_WIN)))
+        {
+            s_vel_goal_last = 0;
+            S_CalcCurrentToOutput(0);
+        }
+        else if (s_db_brake_cnt > 0U)
+        {
+            s_db_brake_cnt--;
+            s_vel_goal_last = 0;
+            S_CalcVelocityP(0);
+        }
+        else
+        {
+            s_vel_goal_last = 0;
+            S_CalcCurrentToOutput(0);
+        }
+        return;
     }
 
-    S_ClampCurrent(&out);
-    S_CalcCurrentToOutput(out);
+    S_CalcVelocityP(vel_goal);
 }
 
 /**
  * @输入 goal_vel: 目标速度（细分步/s）
  * @输出 无
- * @说明 速度 P 环：current = pidKp×err>>10，err 限 ±1024×1024，输出限 ±ratedCurrent
- * 依据 .cl/memory/ config_default_pid pid_kp=5 + motor_minloop_control P 环量纲
+ * @说明 速度 P 环（串级内环）：current = pidKp×err>>10，err 限 ±1024×1024，
+ *   输出限 ±ratedCurrent；位置模式经外环输入目标，速度模式直接输入
+ * 依据 .cl/memory/ config_default_pid pid_kp=5（待实测整定）+ motor_minloop_control P 环量纲
  */
 static void S_CalcVelocityP(int32_t goal_vel)
 {
     int32_t err = goal_vel - s_est_velocity;
     int32_t out;
+    int32_t dvel;
 
     if (err > (int32_t)USR_MOTOR_VEL_ERR_MAX)
     {
@@ -200,7 +313,13 @@ static void S_CalcVelocityP(int32_t goal_vel)
         err = -(int32_t)USR_MOTOR_VEL_ERR_MAX;
     }
 
+    /* 速度阻尼（8/13 实测 Kd=400 压住编码器微抖假速度极限环；串级重构后恢复）
+       微振时 v 每帧大幅波动 → 阻尼反向电流抵消；匀速时 dv≈0 不干预 */
+    dvel = s_est_velocity - s_vel_last;
+    s_vel_last = s_est_velocity;
+
     out = (s_config->pidKp * err) >> 10;
+    out -= (s_config->pidKd * dvel) >> 10;
     S_ClampCurrent(&out);
     S_CalcCurrentToOutput(out);
 }
@@ -309,18 +428,12 @@ void USR_Motor_Tick20kHz(void)
         return;
     }
 
-    /* 3. 位置增量（回绕安全） */
+    /* 3. 位置增量（回绕安全，复用 cycle_usr 最短循环差） */
     s_real_lap_position_last = s_real_lap_position;
     s_real_lap_position = (int32_t)rectified;
-    delta = s_real_lap_position - s_real_lap_position_last;
-    if (delta > (int32_t)(USR_MOTOR_SUBDIVIDE_STEPS >> 1))
-    {
-        delta -= (int32_t)USR_MOTOR_SUBDIVIDE_STEPS;
-    }
-    else if (delta < -(int32_t)(USR_MOTOR_SUBDIVIDE_STEPS >> 1))
-    {
-        delta += (int32_t)USR_MOTOR_SUBDIVIDE_STEPS;
-    }
+    delta = USR_Cycle_Sub(s_real_lap_position, s_real_lap_position_last,
+                          (int32_t)USR_MOTOR_SUBDIVIDE_STEPS);
+    s_delta_sum += delta;
     s_real_position_last = s_real_position;
     s_real_position += delta;
 
@@ -380,7 +493,7 @@ void USR_Motor_Tick20kHz(void)
                 USR_TB67H450_Sleep();
                 break;
             case MODE_COMMAND_POSITION:
-                S_CalcPositionP(s_goal_position);
+                S_CalcPositionCascade(s_goal_position);
                 break;
             case MODE_COMMAND_VELOCITY:
                 S_CalcVelocityP(s_goal_velocity);
@@ -409,8 +522,15 @@ void USR_Motor_Tick20kHz(void)
         switch (s_mode_running)
         {
             case MODE_COMMAND_POSITION:
-                if ((S_Abs32(s_goal_position - s_est_position)
-                     <= (int32_t)USR_MOTOR_POS_DEADBAND)
+            {
+                /* 到位判定：绕回窗口内死区同步加大（128→256，与位置环一致） */
+                int32_t db = (int32_t)USR_MOTOR_POS_DEADBAND;
+                if ((s_goal_position > ((int32_t)USR_MOTOR_SUBDIVIDE_STEPS - (int32_t)USR_MOTOR_POS_WRAP_WIN))
+                        && (s_goal_position < ((int32_t)USR_MOTOR_SUBDIVIDE_STEPS + (int32_t)USR_MOTOR_POS_WRAP_WIN)))
+                {
+                    db = (int32_t)USR_MOTOR_POS_DEADBAND_WRAP;
+                }
+                if ((S_Abs32(s_goal_position - s_est_position) <= db)
                     && (S_Abs32(s_est_velocity)
                         <= (int32_t)USR_MOTOR_VEL_DEADBAND))
                 {
@@ -421,6 +541,7 @@ void USR_Motor_Tick20kHz(void)
                     s_state = STATE_RUNNING;
                 }
                 break;
+            }
             case MODE_COMMAND_VELOCITY:
                 if (S_Abs32(s_goal_velocity - s_est_velocity)
                     <= (int32_t)USR_MOTOR_VEL_DEADBAND)
@@ -604,4 +725,36 @@ void USR_Motor_GetTelemetry(float *pos, float *vel, float *cur,
     *cur = USR_Motor_GetCurrent();
     *mode = (uint8_t)s_mode_running;
     *state = (uint8_t)s_state;
+}
+
+/**
+ * @输入 无
+ * @输出 累计位置原始值（细分步）
+ * @说明 查询实测累计位置（遥测诊断用，非业务接口）
+ */
+int32_t USR_Motor_GetRawPosition(void)
+{
+    return s_real_position;
+}
+
+/**
+ * @输入 无
+ * @输出 估计速度原始值（细分步/s）
+ * @说明 查询速度估计原始值（遥测诊断用，非业务接口）
+ */
+int32_t USR_Motor_GetRawVelocity(void)
+{
+    return s_est_velocity;
+}
+
+/**
+ * @输入 无
+ * @输出 最近一帧位置增量（细分步）
+ * @说明 查询最近一帧 Δpos（遥测诊断用，非业务接口）
+ */
+int32_t USR_Motor_GetRawDelta(void)
+{
+    int32_t sum = s_delta_sum;
+    s_delta_sum = 0;
+    return sum;
 }

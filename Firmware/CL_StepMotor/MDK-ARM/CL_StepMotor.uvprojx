@@ -699,6 +699,16 @@
               <FileType>5</FileType>
               <FilePath>../module/usr/motor_usr.h</FilePath>
             </File>
+            <File>
+              <FileName>motion_planner_usr.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>../module/usr/motion_planner_usr.c</FilePath>
+            </File>
+            <File>
+              <FileName>motion_planner_usr.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>../module/usr/motion_planner_usr.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

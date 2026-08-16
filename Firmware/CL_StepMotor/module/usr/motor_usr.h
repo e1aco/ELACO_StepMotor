@@ -41,6 +41,10 @@ extern "C" {
    |err|>窗口 → MIN_VEL 强制推进（推得动 > 假速度）。8/15 实测 30000 冲入死区
    → 过冲 ±150~250 → 弹性摆动自持（90° 24 行 / 0° 33 行，到位抖动大） */
 #define USR_MOTOR_POS_MIN_VEL_DS  2048U
+/* 假速度上限（步/s）：编码器磁干扰读数抖动经 IIR 后仍达 ±25000~40000（8/15
+   实测）→ vel_goal 落入此区间时速度环被假速度主导（err=vel_goal-假速度 →
+   ±2A 猛摆极限环，8/16 实测）→ 该区间改位置环误差直驱电流（不经速度环） */
+#define USR_MOTOR_FAKE_VEL_MAX    25000U
 /* 死区制动时长（ms）：进入死区后先速度环刹停残余速度（过冲小）再 0 电流。
    一次性制动（有限时长）→ 无持续速度环 → 无假速度自激（8/15 实测持续
    死区速度环 → 自激 30 行） */
@@ -75,6 +79,21 @@ extern "C" {
 #define USR_MOTOR_VEL_DEADBAND    512U   /* 速度到位死区（细分步/s，≈0.01 圈/s；待实测确认） */
 #define USR_MOTOR_CUR_DEADBAND    10U    /* 电流到位死区（mA；待实测确认） */
 
+/* 超前角补偿分段（依据 .cl/memory/ motor_compensate_angle=分段|±430| 步，
+   vel 阈值 100k/1.3M/2.2M，斜率 262/105/52>>20，复刻参考 motor.c） */
+#define USR_MOTOR_LEAD_VEL1       100000   /* 低于此速无补偿（细分步/s） */
+#define USR_MOTOR_LEAD_VEL2       1300000  /* 第一段上界 */
+#define USR_MOTOR_LEAD_VEL3       2200000  /* 第二段上界 */
+#define USR_MOTOR_LEAD_MAX        430      /* 补偿封顶（细分步，≈3°） */
+#define USR_MOTOR_LEAD_SLOPE1     262      /* 段 1 斜率（>>20） */
+#define USR_MOTOR_LEAD_SLOPE2     105      /* 段 2 斜率（>>20） */
+#define USR_MOTOR_LEAD_SLOPE3     52       /* 段 3 斜率（>>20） */
+
+/* 堵转/过载检测（复刻参考 motor.c）：电流顶格(或电流模式非零)且 |速度|<1/5 圈/s
+   持续 1s → 堵转；非电流模式电流顶格持续 1s → 过载 */
+#define USR_MOTOR_STALL_TIME_US   1000000U /* 堵转判定时长（µs） */
+#define USR_MOTOR_STALL_VEL_MAX   (USR_MOTOR_SUBDIVIDE_STEPS / 5)  /* 堵转速度上限 */
+
 /* ==== 类型定义 ==== */
 /* 电机模式（对齐参考 motor.h，最小闭环仅实现 STOP/POSITION/VELOCITY/CURRENT，其余回 STOP） */
 typedef enum {
@@ -99,15 +118,17 @@ typedef enum {
     STATE_NO_CALIB
 } Motor_State_T;
 
-/* 电机配置（精简自建：config_usr/planner 未建，先按最小闭环所需字段；
-   后续 config_usr/PID-DCE 落地后扩为参考 motor.h 全结构） */
+/* 电机配置（本任务扩展：planner 参数 + 保护开关，config_usr 任务再统一 BoardConfig_t） */
 typedef struct {
     int32_t encoderHomeOffset;  /* 编码器零位偏移（细分步 0~51199） */
     int32_t ratedCurrent;       /* 额定电流限幅（mA） */
     int32_t ratedVelocity;      /* 额定速度限幅（细分步/s） */
+    int32_t ratedVelocityAcc;   /* 速度加速度限幅（细分步/s²，planner 用） */
+    int32_t ratedCurrentAcc;    /* 电流加速度限幅（mA/s，planner 用） */
     int32_t posKp;              /* 位置环增益（误差→速度目标，依据 .cl/memory/ motor_cascade_poskp=32768） */
     int32_t pidKp;              /* 速度环增益（速度误差→电流，依据 .cl/memory/ pid_kp=5 待实测整定） */
     int32_t pidKd;              /* 速度环阻尼（速度变化→反向电流，8/13 实测 Kd=400 压微振极限环） */
+    bool    stallProtectSwitch; /* 堵转保护开关（8/15 后确认默认开） */
 } Motor_Config_T;
 
 /* ==== 全局实例 ==== */
@@ -132,6 +153,9 @@ void    USR_Motor_GetTelemetry(float *pos, float *vel, float *cur,
 int32_t USR_Motor_GetRawPosition(void);
 int32_t USR_Motor_GetRawVelocity(void);
 int32_t USR_Motor_GetRawDelta(void);
+bool    USR_Motor_IsCalibrated(void);
+void    USR_Motor_TriggerCalibration(void);
+void    USR_Motor_ZeroPosition(void);
 
 #ifdef __cplusplus
 }

@@ -1,0 +1,11 @@
+capture.log
+status
+hits.log
+mon_err.log
+mon_out.log
+prod_verify.log
+pyocd_err.log
+pyocd_out.log
+flash_marker
+t3_verify.log
+t4_verify.log

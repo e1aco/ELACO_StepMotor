@@ -116,3 +116,19 @@
 - motor_min_vel_push = MIN_VEL=30000 / WRAP 60000（细分步/s），仅 |err|>MIN_VEL_DS=2048 且 err≠0 时钳位  依据: 静摩擦 ~250mA→vel_goal 下限≈30000（pidKp=10×30000>>10≈292mA 推得动）；MIN_VEL_DS=2048 减速窗口内 32×err 线性下坡低速进死区（8192@死区边缘），>2048 才 MIN_VEL 推进；绕回窗口用 60000（0° 段静摩擦大需强推）  日期: 2026-08-15  来源: 实测决策
 - motor_vel_goal_acc = 500（细分步/s²限斜率：每帧 vel_goal 变化 ≤500，500×20kHz=10M 步/s² 加速度上限）  依据: 8/15 方案Y——32×err 下坡限斜率整形防位置环阶跃冲量；实测到位速度≈25600 步/s 仍需 MIN_VEL_DS=2048 才冲不死区  日期: 2026-08-15  来源: 实测决策
 - motor_test_limits = currentLimit=2000mA（42 步进额定 2A）、velocityLimit=2圈/s（步进低速区间防失步，用户确认：10圈/s 太快）  依据: 用户反馈“步进电机限幅 2000mA/10圈/s 都太快”，改 2圈/s  日期: 2026-08-13  来源: 实测决策
+## motion_planner 实测值（2026-08-16 板端验证，任务90）
+
+- planner_rated_velocity = 102400 细分步/s（2圈/s）  依据: 8/13 实测电机限速（用户确认 2圈/s）；板测 A/B/C 加速 20ms 达限速后匀速、匀速段 vel 恒 102400 封顶  日期: 2026-08-16  来源: 实测
+- planner_rated_velocity_acc = 5120000 细分步/s²（100圈/s²）  依据: 参考 main.c velocityAcc=100*MOTOR_SUBDIVIDE_STEPS；板测加速 20ms 到限速 102400、减速距离 v²/2a=1024 步 与公式吻合  日期: 2026-08-16  来源: 推导+实测
+- planner_rated_current_acc = 2000  依据: 参考 main.c ratedCurrentAcc=2000 固定值（CurrentTracker 未在测试段驱动，仅配置注入）  日期: 2026-08-16  来源: 推导
+- planner_trajectory_update_timeout = 200ms  依据: 参考 motor.c TrajectoryTracker_Init(200)；板测 D 阶段 200ms 仿真超时即停车（vel 20480→0 锁定）  日期: 2026-08-16  来源: 推导+实测
+- planner_speed_locking_brake = 5120（=ratedVelocityAcc/1000）  依据: 参考推导（到位判据 |vel|≤5120 直接锁 0）  日期: 2026-08-16  来源: 推导
+- planner_signed_div_note = 积分器除法被除数必须为有符号：CTRL_FREQ 曾定义 20000U → int32 负积分器(如 -5120000) 转无符号 4289847296 /20000U = +214492/帧 → 减速变爆速（实测行 13 起 vel 102400→21551636 指数爆涨，D 阶段 20480→42704465）；改 20000（无 U）后 A/B/C 到位 vel==0 锁定、D 超时停车，PLAN_OK  日期: 2026-08-16  来源: 实测+复盘
+
+## motor 完善（2026-08-16 验收，任务104）
+
+- motor_velocity_kp_branch = 速度模式 Kp 降 3、位置模式保持 10（S_CalcVelocityP 内按 mode 分支）  依据: 8/16 VELOCITY 实测——Kp=10 时 500mA 推空载几十 ms 冲过目标→err 反号→反向满推→±1~3 圈/s 往返极限环（周期 ~200ms）；Kp=3 破环后 0.5 圈/s 收敛（cur=0.255A 恒定，数值为 Kd±256mA 高频摆动+遥测采样相位锁定，功能正常）；POSITION 外环（8/15 已标定）保持 Kp=10  日期: 2026-08-16  来源: 实测
+- motor_fake_vel_root_cause = 位置环极限环根因链：planner 连续软目标→vel_goal 每帧变→电流波动→编码器磁干扰假速度（±25000~40000 步/s，8/15 记录 ±100000）→速度环 err 被污染→±2A 猛摆；VELOCITY 模式目标恒定→电流稳定→假速度≈0→收敛；planner 段目标连续变化→自激→摆。8/15 无 planner 时 MIN_VEL=30000 单向猛推收敛，planner 下 MIN_VEL 冲过软目标  依据: 8/16 fix3~fix6 多轮遥测对照  日期: 2026-08-16  来源: 实测+复盘
+- motor_fake_vel_direct_drive = USR_MOTOR_FAKE_VEL_MAX=25000：|vel_goal|≤25000（低速/到位区）跳过速度环，位置误差 1:1 直驱电流（cur=goal-s_real_position mA，限 ±ratedCurrent，用 s_real_position 免超前角污染，s_vel_goal_last=0 防斜率残留），S_CalcCurrentToOutput 后直接 return；planner 未完成段 vel_goal=s_soft_velocity+((posKp×err)>>10) 轨迹速度主导+P 修正；planner 完成段 MIN_VEL 后同样判低速直驱  依据: 8/16 fix6——短行程 1273 步 FINISH（err=-113）、SW2 14 轮循环全 FINISH（落点 92~124 步=0.64~0.87°，死区 256 内）；长行程巡航段 vel_goal>25000 仍走速度环仍摆（已知限制）  日期: 2026-08-16  来源: 实测
+- motor_stall_sim_verdict = 堵转物理演示不可行：恒流 FOC 90° 领先角矢量跟随=无对抗力矩，1mA/5mA/50mA/200mA 空载都推得动（1mA→15 圈/s、5mA→11 圈/s、50mA→12 圈/s、200mA→18 圈/s，低电流反而略快疑与电流环动态有关）；5mm 细轴手捏只能减速到 ~1 圈/s（滑动摩擦平衡）> 堵转阈值 0.2 圈/s（STALL_VEL_MAX=10240），捏不死；TB67H450 为开环占空比映射（mA→DAC×5083>>12，无电流采样闭环），直流源 ~100mA 含板子静态功耗  依据: 8/16 多轮实测（用户"手捏不死"+"轴太细"反馈）；STALL 行为链经 STALL_SIM 测试钩子实机验证：置位→1s 计时→STATE_STALL→输出睡眠（S_ZeroOutput+Sleep）→模式切换自动恢复（s_soft_new_curve 清 s_is_stalled/s_stalled_time），2 次命中遥测 3,4；钩子验收后已删  日期: 2026-08-16  来源: 实测+复盘
+- motor_long_stroke_limit = POSITION 多圈回程（planner 巡航段）偶发摆荡：vel_goal>25000 走速度环，planner 连续目标→电流波动→假速度自激 ±2A 猛摆（条件性非必现，19:44 的 32 圈回程稳定 -1.7 圈/s、19:33 的 19 圈回程摆）；单圈域验收判据（SW2 循环）已过，长行程为已知限制，后续若需根治方向：巡航段电流规划器接管或直驱阈值覆盖巡航  依据: 8/16 遥测对照  日期: 2026-08-16  来源: 实测

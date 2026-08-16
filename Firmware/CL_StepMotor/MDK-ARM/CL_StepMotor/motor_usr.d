@@ -6,4 +6,5 @@ cl_stepmotor\motor_usr.o: ../module/usr/mt6816_usr.h
 cl_stepmotor\motor_usr.o: ../module/usr/tb67h450_usr.h
 cl_stepmotor\motor_usr.o: ../module/usr/encoder_calibrator_usr.h
 cl_stepmotor\motor_usr.o: ../module/usr/cycle_usr.h
+cl_stepmotor\motor_usr.o: ../module/usr/motion_planner_usr.h
 cl_stepmotor\motor_usr.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stddef.h

@@ -3,16 +3,19 @@
  * @作者: cl
  * @日期: 2026-08-13
  * @版本: v1.0
- * @说明: 电机用户层（串级闭环：编码器 raw×25/8 映射 + 位置环→速度环→电流 +
- *   位置/速度/电流命令 + IIR 速度估计 + 状态机 STOP/FINISH/RUNNING）
+ * @说明: 电机用户层（串级闭环：编码器映射 + 位置环→速度环→电流 +
+ *   超前角补偿 + planner 软目标 + 位置/速度/电流/轨迹命令 + IIR 速度估计 +
+ *   完整状态机 STOP/FINISH/RUNNING/OVERLOAD/STALL/NO_CALIB）
  * @平台: STM32F103RET6
- * @依赖: mt6816_usr, tb67h450_usr, encoder_calibrator_usr, cycle_usr
+ * @依赖: mt6816_usr, tb67h450_usr, encoder_calibrator_usr,
+ *   cycle_usr, motion_planner_usr
  ****************************************************************************/
 #include "motor_usr.h"
 #include "mt6816_usr.h"
 #include "tb67h450_usr.h"
 #include "encoder_calibrator_usr.h"
 #include "cycle_usr.h"
+#include "motion_planner_usr.h"
 #include <stddef.h>
 
 /* ==== 常量定义 ==== */
@@ -39,7 +42,8 @@ static int32_t s_vel_last = 0;               /* 上一帧速度估计（速度�
 /* 估计量 */
 static int32_t s_est_velocity = 0;           /* 估计速度（细分步/s） */
 static int32_t s_est_velocity_integral = 0;
-static int32_t s_est_position = 0;           /* 控制用估计位置（=实测，无超前角补偿，任务6加） */
+static int32_t s_est_lead_position = 0;      /* 超前角补偿量（细分步，运动随速递减） */
+static int32_t s_est_position = 0;           /* 控制用估计位置（=实测+超前角，任务6已加） */
 
 /* 目标值 */
 static int32_t s_goal_position = 0;
@@ -47,6 +51,23 @@ static int32_t s_goal_velocity = 0;
 static int32_t s_goal_current = 0;
 static bool    s_goal_disable = false;
 static bool    s_goal_brake = false;
+
+/* 软目标（planner 输出，控制环输入） */
+static int32_t s_soft_position = 0;          /* 软位置（细分步） */
+static int32_t s_soft_velocity = 0;          /* 软速度（细分步/s） */
+static int32_t s_soft_current = 0;           /* 软电流（mA） */
+static bool    s_soft_disable = false;       /* 上一帧禁用状态（边沿触发新曲线） */
+static bool    s_soft_brake = false;         /* 上一帧刹车状态（边沿触发新曲线） */
+static bool    s_soft_new_curve = false;     /* 新曲线标志（模式切换/边沿触发） */
+
+/* 故障检测 */
+static bool    s_is_stalled = false;         /* 堵转标志 */
+static uint32_t s_stalled_time = 0;          /* 堵转计时（µs） */
+static uint32_t s_overload_time = 0;         /* 过载计时（µs） */
+static bool    s_overload_flag = false;      /* 过载标志 */
+
+/* planner 配置实例（motor 内部持有，SetConfig 时同步注入） */
+static MotionPlanner_Config_T s_planner_config;
 
 /* FOC 输出 */
 static int32_t s_foc_position = 0;
@@ -64,6 +85,72 @@ static bool s_first_called = true;
 static int32_t S_Abs32(int32_t x)
 {
     return (x < 0) ? -x : x;
+}
+
+/**
+ * @输入 vel: 估计速度（细分步/s）
+ * @输出 超前角补偿量（细分步，|≤430|）
+ * @说明 分段线性超前角补偿：高速时 FOC 电角度超前，补偿电流矢量换相滞后
+ *   依据 .cl/memory/ motor_compensate_angle=分段|±430| 步
+ *   + 复刻参考 motor.c CompensateAdvancedAngle（阈值/斜率逐值照搬）
+ */
+static int32_t S_CompensateAdvancedAngle(int32_t vel)
+{
+    int32_t compensate;
+
+    if (vel < 0)
+    {
+        if (vel > -(int32_t)USR_MOTOR_LEAD_VEL1)
+        {
+            compensate = 0;
+        }
+        else if (vel > -(int32_t)USR_MOTOR_LEAD_VEL2)
+        {
+            compensate = (((vel + (int32_t)USR_MOTOR_LEAD_VEL1)
+                           * (int32_t)USR_MOTOR_LEAD_SLOPE1) >> 20) - 0;
+        }
+        else if (vel > -(int32_t)USR_MOTOR_LEAD_VEL3)
+        {
+            compensate = (((vel + (int32_t)USR_MOTOR_LEAD_VEL2)
+                           * (int32_t)USR_MOTOR_LEAD_SLOPE2) >> 20) - 300;
+        }
+        else
+        {
+            compensate = (((vel + (int32_t)USR_MOTOR_LEAD_VEL3)
+                           * (int32_t)USR_MOTOR_LEAD_SLOPE3) >> 20) - 390;
+        }
+        if (compensate < -(int32_t)USR_MOTOR_LEAD_MAX)
+        {
+            compensate = -(int32_t)USR_MOTOR_LEAD_MAX;
+        }
+    }
+    else
+    {
+        if (vel < (int32_t)USR_MOTOR_LEAD_VEL1)
+        {
+            compensate = 0;
+        }
+        else if (vel < (int32_t)USR_MOTOR_LEAD_VEL2)
+        {
+            compensate = (((vel - (int32_t)USR_MOTOR_LEAD_VEL1)
+                           * (int32_t)USR_MOTOR_LEAD_SLOPE1) >> 20) + 0;
+        }
+        else if (vel < (int32_t)USR_MOTOR_LEAD_VEL3)
+        {
+            compensate = (((vel - (int32_t)USR_MOTOR_LEAD_VEL2)
+                           * (int32_t)USR_MOTOR_LEAD_SLOPE2) >> 20) + 300;
+        }
+        else
+        {
+            compensate = (((vel - (int32_t)USR_MOTOR_LEAD_VEL3)
+                           * (int32_t)USR_MOTOR_LEAD_SLOPE3) >> 20) + 390;
+        }
+        if (compensate > (int32_t)USR_MOTOR_LEAD_MAX)
+        {
+            compensate = (int32_t)USR_MOTOR_LEAD_MAX;
+        }
+    }
+    return compensate;
 }
 
 /**
@@ -145,17 +232,89 @@ static uint8_t s_db_active = 0U;
    一次性制动（有限帧）→ 无持续速度环 → 无假速度自激 */
 static uint16_t s_db_brake_cnt = 0U;
 
+/**
+ * @输入 无
+ * @输出 无
+ * @说明 清控制环状态（新曲线/断电/刹车时调用）：
+ *   速度环阻尼基准对齐当前速度（防阻尼阶跃反冲）+
+ *   位置环限斜率/死区状态复位（重新爬坡/重新判定）
+ *   依据 .cl/memory/ motor_arrival_brake_ms
+ *   + 复刻参考 motor.c ClearIntegral（本项目无积分器）
+ */
+static void S_ClearIntegral(void)
+{
+    s_vel_last = s_est_velocity;
+    s_vel_goal_last = 0;
+    s_db_active = 0U;
+    s_db_brake_cnt = 0U;
+}
+
 static void S_CalcPositionCascade(int32_t goal_pos)
 {
     int32_t err = goal_pos - s_est_position;
     int32_t vel_goal;
     int32_t deadband = (int32_t)USR_MOTOR_POS_DEADBAND;
 
+    /* planner 未完成（软目标≠最终目标）：轨迹速度主导 + P 修正（8/16）
+       根因：planner 减速段软目标爬升慢 → 位置环 err 长期滞留低速区
+       （vel_goal < 假速度 ±25000~40000）→ 速度环被编码器磁干扰假速度
+       主导 → ±2A 猛摆极限环（8/16 实测 POSITION 长行程 vel ±1~3.8 圈/s，
+       pos 微摆不收敛）。改为 vel_goal=planner 轨迹速度+位置修正 →
+       速度环跟踪连续轨迹（无假速度主导机会）；planner 完成时 real 贴
+       soft → 小 err 交棒下方 8/15 整形 → 死区收敛 */
+    if (goal_pos != s_goal_position)
+    {
+        vel_goal = s_soft_velocity + ((s_config->posKp * err) >> 10);
+        if (vel_goal > s_config->ratedVelocity)
+        {
+            vel_goal = s_config->ratedVelocity;
+        }
+        else if (vel_goal < -s_config->ratedVelocity)
+        {
+            vel_goal = -s_config->ratedVelocity;
+        }
+        /* 低速直驱（8/16）：vel_goal 落假速度区（≤25000 步/s，planner 减速
+           尾段 soft_vel→0 时）→ 速度环被假速度主导摆荡 → 改位置环误差直驱
+           电流（用 s_real_position 免超前角污染，磁干扰只污染速度估计） */
+        if ((vel_goal <= (int32_t)USR_MOTOR_FAKE_VEL_MAX)
+                && (vel_goal >= -(int32_t)USR_MOTOR_FAKE_VEL_MAX))
+        {
+            int32_t cur = goal_pos - s_real_position;
+            if (cur > s_config->ratedCurrent)
+            {
+                cur = s_config->ratedCurrent;
+            }
+            else if (cur < -s_config->ratedCurrent)
+            {
+                cur = -s_config->ratedCurrent;
+            }
+            s_vel_goal_last = 0;
+            S_CalcCurrentToOutput(cur);
+            return;
+        }
+        int32_t dv = vel_goal - s_vel_goal_last;
+        if (dv > (int32_t)USR_MOTOR_VEL_GOAL_ACC)
+        {
+            vel_goal = s_vel_goal_last + (int32_t)USR_MOTOR_VEL_GOAL_ACC;
+        }
+        else if (dv < -(int32_t)USR_MOTOR_VEL_GOAL_ACC)
+        {
+            vel_goal = s_vel_goal_last - (int32_t)USR_MOTOR_VEL_GOAL_ACC;
+        }
+        s_vel_goal_last = vel_goal;
+        s_db_active = 0U;   /* 交棒：planner 完成走归零段（制动+0 电流） */
+        S_CalcVelocityP(vel_goal);
+        return;
+    }
+
+    /* 绕回窗口判定用固定目标 s_goal_position（goal_pos=planner 软目标逼近时边界抖动） */
+    int32_t goal_fix = s_goal_position;
+
     /* 绕回窗口内死区加大（128→256）：0° 处弹性/毛刺摆动 ±250 > 128 →
        频繁出界驱动 → 摆动自激（8/15 MODE_POSITION 实测 33 行）；
        256 吞掉摆动 → 不出界不驱动 → 自由衰减静止 */
-    if ((goal_pos > ((int32_t)USR_MOTOR_SUBDIVIDE_STEPS - (int32_t)USR_MOTOR_POS_WRAP_WIN))
-            && (goal_pos < ((int32_t)USR_MOTOR_SUBDIVIDE_STEPS + (int32_t)USR_MOTOR_POS_WRAP_WIN)))
+    if ((goal_fix > ((int32_t)USR_MOTOR_SUBDIVIDE_STEPS - (int32_t)USR_MOTOR_POS_WRAP_WIN))
+            && (goal_fix < ((int32_t)USR_MOTOR_SUBDIVIDE_STEPS + (int32_t)USR_MOTOR_POS_WRAP_WIN)))
     {
         deadband = (int32_t)USR_MOTOR_POS_DEADBAND_WRAP;
     }
@@ -217,22 +376,17 @@ static void S_CalcPositionCascade(int32_t goal_pos)
         {
             vel_goal = -s_config->ratedVelocity;
         }
-
-        /* 死区外最小推进速度钳位：仅远离死区（|err|>减速窗口）强制 MIN_VEL 推进；
-           减速窗口内不钳 → vel_goal=32×err 线性下坡（限斜率整形）→ 低速进入
-           死区（~8192@死区边缘）→ 落点无过冲无摆动。
-           BUG 记录（8/15）：原 err≠0 全区间钳位 30000 → 30000 冲入死区 → 过冲
-           ±150~250 → 弹性摆动自持（90° 24 行 / 0° 33 行，到位抖动大）；
-           vel_goal < 假速度（±25000）会被速度环假速度主导 → 但减速窗口内
-           位置带动能低速接近（动摩擦小）→ 实测无卡死。
-           目标在编码器 0 点绕回窗口内 → 读数毛刺假速度 ±40000 → 用 WRAP 档 */
+        /* 死区外最小推进速度钳位（8/15 整形，planner 完成段）：仅 |err|>减速窗口
+           强制 MIN_VEL 推进（推得动 > 假速度）；减速窗口内 32×err 线性下坡低速
+           进死区 → 落点无过冲。8/16 注：此块仅在 planner 完成（软目标=最终目标）
+           后生效——planner 段已由轨迹速度主导（见函数头），无 MIN_VEL 冲过问题 */
         if ((err != 0)
                 && ((err > (int32_t)USR_MOTOR_POS_MIN_VEL_DS)
                     || (err < -(int32_t)USR_MOTOR_POS_MIN_VEL_DS)))
         {
             int32_t min_vel = (int32_t)USR_MOTOR_POS_MIN_VEL;
-            if ((goal_pos > ((int32_t)USR_MOTOR_SUBDIVIDE_STEPS - (int32_t)USR_MOTOR_POS_WRAP_WIN))
-                    && (goal_pos < ((int32_t)USR_MOTOR_SUBDIVIDE_STEPS + (int32_t)USR_MOTOR_POS_WRAP_WIN)))
+            if ((goal_fix > ((int32_t)USR_MOTOR_SUBDIVIDE_STEPS - (int32_t)USR_MOTOR_POS_WRAP_WIN))
+                    && (goal_fix < ((int32_t)USR_MOTOR_SUBDIVIDE_STEPS + (int32_t)USR_MOTOR_POS_WRAP_WIN)))
             {
                 min_vel = (int32_t)USR_MOTOR_POS_MIN_VEL_WRAP;
             }
@@ -245,6 +399,26 @@ static void S_CalcPositionCascade(int32_t goal_pos)
             {
                 vel_goal = -min_vel;
             }
+        }
+
+        /* 低速直驱（8/16）：MIN_VEL 未钳位的 vel_goal 落假速度区（≤25000 步/s）
+           → 速度环被假速度主导摆荡 → 改位置环误差直驱电流（用 s_real_position
+           免超前角污染）→ err 单调衰减 → 死区 0 电流收敛 */
+        if ((vel_goal <= (int32_t)USR_MOTOR_FAKE_VEL_MAX)
+                && (vel_goal >= -(int32_t)USR_MOTOR_FAKE_VEL_MAX))
+        {
+            int32_t cur = goal_fix - s_real_position;
+            if (cur > s_config->ratedCurrent)
+            {
+                cur = s_config->ratedCurrent;
+            }
+            else if (cur < -s_config->ratedCurrent)
+            {
+                cur = -s_config->ratedCurrent;
+            }
+            s_vel_goal_last = 0;
+            S_CalcCurrentToOutput(cur);
+            return;
         }
 
         /* 输出限斜率（简易轨迹整形）：vel_goal 每帧变化 ≤ ACC，
@@ -268,8 +442,8 @@ static void S_CalcPositionCascade(int32_t goal_pos)
            0 电流无磁干扰，但残余速度滑行过冲 → 制动 10ms 刹停；
            绕回窗口（目标≈编码器 0 点）直接 0 电流（0° 毛刺假速度 ±40000
            会让制动输出波动推位置 → 摆动，实测 0 电流衰减收敛） */
-        if ((goal_pos > ((int32_t)USR_MOTOR_SUBDIVIDE_STEPS - (int32_t)USR_MOTOR_POS_WRAP_WIN))
-                && (goal_pos < ((int32_t)USR_MOTOR_SUBDIVIDE_STEPS + (int32_t)USR_MOTOR_POS_WRAP_WIN)))
+        if ((goal_fix > ((int32_t)USR_MOTOR_SUBDIVIDE_STEPS - (int32_t)USR_MOTOR_POS_WRAP_WIN))
+                && (goal_fix < ((int32_t)USR_MOTOR_SUBDIVIDE_STEPS + (int32_t)USR_MOTOR_POS_WRAP_WIN)))
         {
             s_vel_goal_last = 0;
             S_CalcCurrentToOutput(0);
@@ -314,12 +488,36 @@ static void S_CalcVelocityP(int32_t goal_vel)
     }
 
     /* 速度阻尼（8/13 实测 Kd=400 压住编码器微抖假速度极限环；串级重构后恢复）
-       微振时 v 每帧大幅波动 → 阻尼反向电流抵消；匀速时 dv≈0 不干预 */
+       微振时 v 每帧大幅波动 → 阻尼反向电流抵消；匀速时 dv≈0 不干预。
+       8/16 VELOCITY 持续运行实测：微振 dvel 被 Kd×dvel>>10 放大 → 电流饱和
+       ±2000mA 方波 bang-bang（0.5~2.5 圈/s 摆动极限环）→ Kd 项限 ±256mA：
+       阻尼电流 < 静摩擦（250mA）推不动真实电机 → 不激发运动 → 震荡消除；
+       真实加减速由 Kp 项主导；POSITION 死区制动（10ms）Kp=10×err>>10 仍有效 */
     dvel = s_est_velocity - s_vel_last;
     s_vel_last = s_est_velocity;
 
     out = (s_config->pidKp * err) >> 10;
-    out -= (s_config->pidKd * dvel) >> 10;
+    /* 8/16 VELOCITY 持续运行实测：Kp=10 → 500mA 推空载电机几十 ms 冲过目标 →
+       err 反号 → 反向满推 → 极限环（±1~3 圈/s 往返，周期 ~200ms）。
+       速度模式（无外环整形）降 Kp=3 减增益破环；POSITION 外环（8/15 已收敛
+       标定）保持 Kp=10 */
+    if ((s_mode_running == MODE_COMMAND_VELOCITY)
+            || (s_mode_running == MODE_PWM_VELOCITY))
+    {
+        out = (3 * err) >> 10;
+    }
+    {
+        int32_t kd = (s_config->pidKd * dvel) >> 10;
+        if (kd > (int32_t)256)
+        {
+            kd = (int32_t)256;
+        }
+        else if (kd < (int32_t)-256)
+        {
+            kd = (int32_t)-256;
+        }
+        out -= kd;
+    }
     S_ClampCurrent(&out);
     S_CalcCurrentToOutput(out);
 }
@@ -347,9 +545,39 @@ void USR_Motor_Init(void)
     s_real_position_last = 0;       /* 上一帧累计位置清零（算速度用） */
     s_est_velocity = 0;             /* 估计速度清零（细分步/s） */
     s_est_velocity_integral = 0;    /* IIR 速度积分器清零 */
-    s_est_position = 0;             /* 控制用估计位置清零（当前=实测） */
+    s_est_lead_position = 0;        /* 超前角补偿清零 */
+    s_est_position = 0;             /* 控制用估计位置清零 */
+    s_soft_position = 0;            /* 软目标清零 */
+    s_soft_velocity = 0;
+    s_soft_current = 0;
+    s_soft_disable = false;
+    s_soft_brake = false;
+    s_soft_new_curve = false;
+    s_is_stalled = false;           /* 堵转标志清零 */
+    s_stalled_time = 0;
+    s_overload_time = 0;
+    s_overload_flag = false;
     s_foc_position = 0;             /* FOC 输出电角度清零（细分步） */
     s_foc_current = 0;              /* FOC 输出电流清零（mA） */
+    s_vel_last = 0;
+    s_vel_goal_last = 0;
+    s_db_active = 0U;
+    s_db_brake_cnt = 0U;
+
+    /* 装配 planner（SetConfig 已注入时；复刻参考 Motor_Init 挂 g_motion_config） */
+    if (NULL != s_config)
+    {
+        s_planner_config.ratedCurrent = s_config->ratedCurrent;
+        s_planner_config.ratedVelocity = s_config->ratedVelocity;
+        s_planner_config.ratedVelocityAcc = s_config->ratedVelocityAcc;
+        s_planner_config.ratedCurrentAcc = s_config->ratedCurrentAcc;
+        USR_MotionPlanner_SetConfig(&s_planner_config);
+        USR_MotionPlanner_CurrentTracker_Init();
+        USR_MotionPlanner_VelocityTracker_Init();
+        USR_MotionPlanner_PositionTracker_Init();
+        /* 轨迹更新超时 200ms（依据 .cl/memory/ planner_trajectory_update_timeout=200） */
+        USR_MotionPlanner_TrajectoryTracker_Init(200);
+    }
 }
 
 /**
@@ -446,13 +674,18 @@ void USR_Motor_Tick20kHz(void)
     s_est_velocity = s_est_velocity_integral >> 5;
     s_est_velocity_integral -= (s_est_velocity << 5);
 
-    s_est_position = s_real_position;   /* 最小闭环无超前角补偿（任务6加） */
+    /* 超前角补偿：控制位置 = 实测 + 补偿（速度越高超前越多，到位减速至 0 补偿归零）
+       依据 .cl/memory/ motor_compensate_angle + 复刻参考 motor.c（补偿量仅影响控制，
+       不影响 s_real_position 遥测） */
+    s_est_lead_position = S_CompensateAdvancedAngle(s_est_velocity);
+    s_est_position = s_real_position + s_est_lead_position;
 
-    /* 5. 模式切换（请求→运行） */
+    /* 5. 模式切换（请求→运行，切换置新曲线标志） */
     if (s_mode_running != s_request_mode)
     {
         s_mode_running = s_request_mode;
         S_ZeroOutput();
+        s_soft_new_curve = true;
     }
 
     /* 6. 目标限幅 */
@@ -473,15 +706,18 @@ void USR_Motor_Tick20kHz(void)
         s_goal_current = -s_config->ratedCurrent;
     }
 
-    /* 7. 控制分派 */
-    if (s_goal_disable)
+    /* 7. 控制分派（堵转/断电/未校准 → 睡眠；刹车 → 制动；否则按模式）
+       依据 .cl/memory/ motor_minloop_control 串级 + 复刻参考 motor.c 分派顺序 */
+    if (s_is_stalled || s_soft_disable || !USR_EncoderCalibrator_IsCalibrated())
     {
         S_ZeroOutput();
+        S_ClearIntegral();
         USR_TB67H450_Sleep();
     }
-    else if (s_goal_brake)
+    else if (s_soft_brake)
     {
         S_ZeroOutput();
+        S_ClearIntegral();
         USR_TB67H450_Brake();
     }
     else
@@ -493,13 +729,17 @@ void USR_Motor_Tick20kHz(void)
                 USR_TB67H450_Sleep();
                 break;
             case MODE_COMMAND_POSITION:
-                S_CalcPositionCascade(s_goal_position);
+            case MODE_COMMAND_TRAJECTORY:
+            case MODE_PWM_POSITION:
+                S_CalcPositionCascade(s_soft_position);
                 break;
             case MODE_COMMAND_VELOCITY:
-                S_CalcVelocityP(s_goal_velocity);
+            case MODE_PWM_VELOCITY:
+                S_CalcVelocityP(s_soft_velocity);
                 break;
             case MODE_COMMAND_CURRENT:
-                S_CalcCurrentToOutput(s_goal_current);
+            case MODE_PWM_CURRENT:
+                S_CalcCurrentToOutput(s_soft_current);
                 break;
             default:
                 S_ZeroOutput();
@@ -508,20 +748,148 @@ void USR_Motor_Tick20kHz(void)
         }
     }
 
-    /* 8. 状态机（最小闭环：STOP/FINISH/RUNNING，任务6后补过载/堵转/未校准） */
-    if (s_mode_running == MODE_STOP)
+    /* 8. 新曲线触发（模式切换或断电/刹车边沿）：重起 planner 软目标 */
+    if (s_soft_new_curve
+            || (s_soft_disable && !s_goal_disable)
+            || (s_soft_brake && !s_goal_brake))
+    {
+        s_soft_new_curve = false;
+        S_ClearIntegral();
+        s_is_stalled = false;
+        s_stalled_time = 0;
+        s_overload_time = 0;
+        s_overload_flag = false;
+
+        switch (s_mode_running)
+        {
+            case MODE_COMMAND_POSITION:
+            case MODE_PWM_POSITION:
+                USR_MotionPlanner_PositionTracker_NewTask(s_est_position,
+                                                          s_est_velocity);
+                break;
+            case MODE_COMMAND_TRAJECTORY:
+                USR_MotionPlanner_TrajectoryTracker_NewTask(s_est_position,
+                                                            s_est_velocity);
+                break;
+            case MODE_COMMAND_VELOCITY:
+            case MODE_PWM_VELOCITY:
+                USR_MotionPlanner_VelocityTracker_NewTask(s_est_velocity);
+                break;
+            case MODE_COMMAND_CURRENT:
+            case MODE_PWM_CURRENT:
+                USR_MotionPlanner_CurrentTracker_NewTask(s_foc_current);
+                break;
+            default:
+                break;
+        }
+    }
+
+    /* 9. planner 软目标生成（复刻参考 motor.c Tracker_CalcSoftGoal 分派） */
+    switch (s_mode_running)
+    {
+        case MODE_COMMAND_POSITION:
+        case MODE_PWM_POSITION:
+            USR_MotionPlanner_PositionTracker_CalcSoftGoal(s_goal_position);
+            s_soft_position = USR_MotionPlanner_PositionTracker_GetGoLocation();
+            s_soft_velocity =
+                USR_MotionPlanner_PositionTracker_GetGoLocationVelocity();
+            break;
+        case MODE_COMMAND_TRAJECTORY:
+            USR_MotionPlanner_TrajectoryTracker_CalcSoftGoal(s_goal_position,
+                                                             s_goal_velocity);
+            s_soft_position =
+                USR_MotionPlanner_TrajectoryTracker_GetGoTrajPosition();
+            s_soft_velocity =
+                USR_MotionPlanner_TrajectoryTracker_GetGoTrajVelocity();
+            break;
+        case MODE_COMMAND_VELOCITY:
+        case MODE_PWM_VELOCITY:
+            USR_MotionPlanner_VelocityTracker_CalcSoftGoal(s_goal_velocity);
+            s_soft_velocity = USR_MotionPlanner_VelocityTracker_GetGoVelocity();
+            break;
+        case MODE_COMMAND_CURRENT:
+        case MODE_PWM_CURRENT:
+            USR_MotionPlanner_CurrentTracker_CalcSoftGoal(s_goal_current);
+            s_soft_current = USR_MotionPlanner_CurrentTracker_GetGoCurrent();
+            break;
+        default:
+            break;
+    }
+
+    s_soft_disable = s_goal_disable;
+    s_soft_brake = s_goal_brake;
+
+    /* 10. 堵转检测（复刻参考 motor.c）：保护开关开启时，
+        电流模式非零电流 或 电流顶格(≤额定限幅即推不动) + 速度 < 1/5 圈/s 持续 1s */
+    if (s_config->stallProtectSwitch)
+    {
+        if ((((s_mode_running == MODE_COMMAND_CURRENT)
+                || (s_mode_running == MODE_PWM_CURRENT))
+                && (S_Abs32(s_foc_current) != 0))
+                || (S_Abs32(s_foc_current) == s_config->ratedCurrent))
+        {
+            if (S_Abs32(s_est_velocity) < (int32_t)USR_MOTOR_STALL_VEL_MAX)
+            {
+                if (s_stalled_time >= (uint32_t)USR_MOTOR_STALL_TIME_US)
+                {
+                    s_is_stalled = true;
+                }
+                else
+                {
+                    s_stalled_time += (uint32_t)USR_MOTOR_CONTROL_US;
+                }
+            }
+        }
+        else
+        {
+            s_stalled_time = 0;
+        }
+    }
+
+    /* 11. 过载检测（复刻参考 motor.c）：非电流模式 电流顶格 持续 1s */
+    if ((s_mode_running != MODE_COMMAND_CURRENT)
+            && (s_mode_running != MODE_PWM_CURRENT)
+            && (S_Abs32(s_foc_current) == s_config->ratedCurrent))
+    {
+        if (s_overload_time >= (uint32_t)USR_MOTOR_STALL_TIME_US)
+        {
+            s_overload_flag = true;
+        }
+        else
+        {
+            s_overload_time += (uint32_t)USR_MOTOR_CONTROL_US;
+        }
+    }
+    else
+    {
+        s_overload_time = 0;
+        s_overload_flag = false;
+    }
+
+    /* 12. 状态机（完整：未校准 > 停止 > 堵转 > 过载 > 模式判定） */
+    if (!USR_EncoderCalibrator_IsCalibrated())
+    {
+        s_state = STATE_NO_CALIB;
+    }
+    else if (s_mode_running == MODE_STOP)
     {
         s_state = STATE_STOP;
     }
-    else if (s_goal_disable || s_goal_brake)
+    else if (s_is_stalled)
     {
-        s_state = STATE_STOP;
+        s_state = STATE_STALL;
+    }
+    else if (s_overload_flag)
+    {
+        s_state = STATE_OVERLOAD;
     }
     else
     {
         switch (s_mode_running)
         {
             case MODE_COMMAND_POSITION:
+            case MODE_COMMAND_TRAJECTORY:
+            case MODE_PWM_POSITION:
             {
                 /* 到位判定：绕回窗口内死区同步加大（128→256，与位置环一致） */
                 int32_t db = (int32_t)USR_MOTOR_POS_DEADBAND;
@@ -543,6 +911,7 @@ void USR_Motor_Tick20kHz(void)
                 break;
             }
             case MODE_COMMAND_VELOCITY:
+            case MODE_PWM_VELOCITY:
                 if (S_Abs32(s_goal_velocity - s_est_velocity)
                     <= (int32_t)USR_MOTOR_VEL_DEADBAND)
                 {
@@ -554,6 +923,7 @@ void USR_Motor_Tick20kHz(void)
                 }
                 break;
             case MODE_COMMAND_CURRENT:
+            case MODE_PWM_CURRENT:
                 if (S_Abs32(s_goal_current - s_foc_current)
                     <= (int32_t)USR_MOTOR_CUR_DEADBAND)
                 {
@@ -648,11 +1018,13 @@ void USR_Motor_SetBrake(bool brake)
 /**
  * @输入 无
  * @输出 无
- * @说明 清堵转标志（最小闭环无堵转检测，预留接口）
+ * @说明 清堵转标志（新曲线自动清；外部命令也可主动清）
+ *   复刻参考 motor.c Motor_ClearStallFlag（清计时 + 标志）
  */
 void USR_Motor_ClearStallFlag(void)
 {
-    /* 最小闭环无堵转检测：无实现（任务6后补过载/堵转检测时填充） */
+    s_stalled_time = 0;
+    s_is_stalled = false;
 }
 
 /**
@@ -757,4 +1129,37 @@ int32_t USR_Motor_GetRawDelta(void)
     int32_t sum = s_delta_sum;
     s_delta_sum = 0;
     return sum;
+}
+
+/**
+ * @输入 无
+ * @输出 true=已校准
+ * @说明 查询编码器校准状态（复刻参考 motor.c Motor_IsCalibrated）
+ */
+bool USR_Motor_IsCalibrated(void)
+{
+    return USR_EncoderCalibrator_IsCalibrated();
+}
+
+/**
+ * @输入 无
+ * @输出 无
+ * @说明 触发编码器校准（复刻参考 motor.c Motor_TriggerCalibration）
+ */
+void USR_Motor_TriggerCalibration(void)
+{
+    USR_EncoderCalibrator_Trigger();
+}
+
+/**
+ * @输入 无
+ * @输出 无
+ * @说明 把当前位置设为新的零位（更新内存 offset；
+ *   落盘待 config_usr/eeprom_usr 落地后接 EEPROM_Write，任务4）
+ *   复刻参考 motor.c Motor_ZeroPosition（EEPROM 部分未移植）
+ */
+void USR_Motor_ZeroPosition(void)
+{
+    s_config->encoderHomeOffset =
+        s_real_position % (int32_t)USR_MOTOR_SUBDIVIDE_STEPS;
 }

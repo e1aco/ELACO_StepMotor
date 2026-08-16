@@ -57,6 +57,7 @@ Python: C:\Users\electronic\AppData\Local\Programs\Python\Python312\python.exe  
 烧录指令: python tools/flash.py --flash <每次编译产出的 hex 路径> --target stm32f103rc   # pyocd 0.45.1 内置仅 stm32f103rc（F103RE 同族可烧，2026-08-15 实测通过）
 复位/运行: python tools/flash.py --reset --target stm32f103rc
 调试回传读取: python tools/serial_monitor.py --port <COM口> --baud 115200
+烧录坑（2026-08-15 实测）: ST-Link 助手侧烧录必失败（Get IDCODE error）勿用；pyocd flash.py 探针连接正常时可烧（--target stm32f103rc 实测通过）
 
 > CAN 波特率差异（memory 标注）：参考项目 can.c 900kbps(PSC4/1+5+4TQ) vs 本工程 CubeMX 500kbps(PSC6/1+9+2TQ)，复刻时按实际总线确认。
 
@@ -73,7 +74,7 @@ Python: C:\Users\electronic\AppData\Local\Programs\Python\Python312\python.exe  
 
 | # | 条目 | 位置/探针位置 | 方法 | 预算 | 实测 | 测试周期 | 状态 |
 |---|------|--------------|------|------|------|---------|------|
-| T1 | TIM4 20kHz 电机闭环 ISR 总耗时 | TIM4_IRQHandler 入口/出口 | 软件 | 50µs（周期 1/20kHz=50µs，72MHz/(71+1)/(49+1)） | 37µs（2026-08-15 DWT） | 每次变更都测 | [x] |
+| T1 | TIM4 20kHz 电机闭环 ISR 总耗时 | TIM4_IRQHandler 入口/出口 | 软件 | 50µs（周期 1/20kHz=50µs，72MHz/(71+1)/(49+1)） | 30µs（2026-08-16 DWT；planner+超前角+堵转接入后重测，STOP 24µs/运动中 30µs；8/15 旧值 37µs） | 每次变更都测 | [x] |
 | T2 | TIM1 100Hz 遥测 ISR 总耗时 | TIM1_UP_IRQHandler 入口/出口 | 软件 | 1000µs（周期 10ms 的 10% 占空；8/15 Saleae 实测 ~2.3ms 超限待复测） | 86µs（2026-08-15 DWT；调参前 2262µs 超限，调参：%f 定点化+发送移主循环） | 每次变更都测 | [x] |
 | T3 | MT6816 SPI 单次读（含≤3 重试） | USR_MT6816_UpdateAngle 入口/出口 | 软件 | 15µs（9MHz 每帧 1.78µs × 2 帧 × 3 重试=10.7µs + HAL 轮询余量；TSCK≥64ns） | 12µs（2026-08-15 DWT；调参：HAL 28µs→寄存器级+SPE 前置使能，见下注） | 每次变更都测 | [x] |
 | T4 | ADC1 编码器供电采样（HAL Start+Poll 路径） | tim_test 测试序列（业务未接入，临时触发） | 软件 | 29µs（memory adc1_ch0_sampling 239.5cycles@12MHz 参考；CubeMX 实际 1.5cycles 待核对） | 27µs（2026-08-15 DWT） | 每次变更都测 | [x] |
@@ -99,8 +100,8 @@ Python: C:\Users\electronic\AppData\Local\Programs\Python\Python312\python.exe  
 > 顺序原则：先核心动作（电机闭环）→ 优化（规划）→ 外围（配置/通信）。不做 485（USART1 不用于命令），命令走 CAN（协议做时再定）。
 - [✓] 复刻 button: 按键扫描（100Hz tick）→ button_usr（click/long/IsPressed 事件）<- 输入事件源，独立快（起 2026-08-13 | 止 2026-08-13 | 验收 2026-08-13 人工验收通过，按键事件与命令链路正常）
 - [✓] 复刻 motor 基础闭环: 编码器 raw×25/8 映射 + FOC 电流输出 + 位置/速度/电流命令 + 速度估计 IIR + 基础状态机（P 环，电机能转/能停/能定位）<- 核心动作先跑通（起 2026-08-13 | 止 2026-08-13 | 验收 2026-08-13 人工验收通过，震动调参 3 轮收敛：Kd400 阻尼+死区输出归零；精度实测 ±0.72° < 死区 0.9°）
-- [ ] 复刻 motion_planner: 4 tracker（Current/Velocity/Position/Trajectory）20kHz 软目标生成（PositionInterpolator 不移植）<- 加减速优化层
-- [ ] 复刻 motor 完善: 接入 planner + PID/DCE + 超前角补偿 + 完整状态机（过载/堵转/未校准）<- 控制质量与保护
+- [x] 复刻 motion_planner: 4 tracker（Current/Velocity/Position/Trajectory）20kHz 软目标生成（PositionInterpolator 不移植）<- 加减速优化层（起 2026-08-16 | 止 2026-08-16 | 验收 2026-08-16 板端 PLAN_OK：A 0→12800 / B 12800→25600 / C 25600→0 到位锁定 pos==goal && vel==0，D 轨迹(12800,51200) 200ms 超时停车 vel==0，全程 |vel|≤102400 无超调；变更点：①参考 NewTask 参数交叉赋值修正 ②轨迹目标=当前位置时除零保护 ③CTRL_FREQ 20000U→20000 有符号除法修复（负积分器被无符号除→减速爆速）④C 阶段测试时间 200ms→300ms（反向 25600 步需 270ms）；测试段已删，编译 0E/0W Flash 21.5KB）
+- [✓] 复刻 motor 完善: 接入 planner + PID/DCE + 超前角补偿 + 完整状态机（过载/堵转/未校准）<- 控制质量与保护（起 2026-08-16 | 止 2026-08-16 | 验收 2026-08-16 人工验收通过：①VELOCITY 0.5 圈/s 收敛 ✓（Kp=3 分支，cur 0.25A 恒定）②POSITION 单圈域 SW2 90°→360° 循环 14+ 轮全 FINISH ✓（落点 0.64~0.87°=92~124 步，死区 256 内稳定，无卡死/误报 STALL）③堵转模拟 STALL ✓（1mA/5mA 空载恒流 FOC 照推 11~15 圈/s、细轴手捏只能减速 ~1 圈/s 无法物理堵转 → STALL_SIM 测试钩子实机验证行为链：置位→1s→STATE_STALL→输出睡眠→模式切换恢复，2 次命中遥测 3,4）④STALL 恢复后 VELOCITY 正常收敛；变更点：fix3 速度环 Kp=10→3（减增益破极限环）+ CURRENT 5mA→1mA、fix4 退役 MIN_VEL 钳位、fix5 planner 段轨迹速度主导+P 修正、fix6 USR_MOTOR_FAKE_VEL_MAX=25000 低速直驱电流（|vel_goal|≤25000 位置误差 1:1 直驱、限 ratedCurrent、用 s_real_position）、fix8 STALL_SIM 钩子（已删）；已知限制（记录 memory）：POSITION 多圈回程巡航段偶发摆荡（vel_goal>25000 走速度环，planner 连续目标→电流波动→编码器磁干扰假速度自激 ±2A，条件性非必现）；测试段已删（SW1/SW2/遥测/STALL_SIM），生产版烧录 0E/0W Flash 22.6KB，T1 30µs 门禁通过）
 - [ ] 复刻配置持久化: config_usr（BoardConfig_t/默认值/configStatus）+ eeprom_usr（DATA 0x0807F800 读写/IsValid/Erase）<- 掉电保存
 - [ ] 新增 can_cmd_usr: CAN1（PA11/PA12, 500kbps）命令+应答（协议做时再定，命令对齐参考 c/v/p/s/z/l 语义）<- 替代 485 命令通道
 - [ ] main 装配: 读配置→Motor 注入→100Hz 按键事件/LED/遥测 USART3→20kHz 校准/电机分派→CONFIG_COMMIT/RESTORE<- 完整生命周期

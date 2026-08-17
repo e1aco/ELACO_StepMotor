@@ -2,7 +2,7 @@
 Build target 'CL_StepMotor'
 compiling main.c...
 linking...
-Program Size: Code=20968 RO-data=2444 RW-data=392 ZI-data=3480  
+Program Size: Code=21008 RO-data=2444 RW-data=392 ZI-data=3480  
 FromELF: creating hex file...
 "CL_StepMotor\CL_StepMotor.axf" - 0 Error(s), 0 Warning(s).
-Build Time Elapsed:  00:00:04
+Build Time Elapsed:  00:00:06

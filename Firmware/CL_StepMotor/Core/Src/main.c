@@ -88,6 +88,8 @@ static uint8_t s_test_a_idx = 0U;
 static int32_t s_test_a_goal = 0;
 static uint8_t s_test_a_wait = 0U;                 /* 0=idle 1=等RUNNING 2=等FINISH */
 static uint32_t s_test_a_wait_ms = 0U;             /* 等RUNNING 超时起点（防目标附近直接 FINISH 死锁） */
+/* 仿真遥测回灌（cl /cl sim 数据源，勿随测试钩子删除）：
+   100Hz 节流计数 + [TELE] 协议打印（telemetry_csv.py 解析 → Simulation/telemetry.csv） */
 static uint32_t s_test_a_tel_cnt = 0U;             /* 100Hz 遥测节流计数 */
 /* USER CODE END PV */
 
@@ -188,21 +190,24 @@ int main(void)
     /* 编码器校准主循环任务（校准完成时校验数据并写 Flash） */
     USR_EncoderCalibrator_TickMainLoop();
 
-    /* 任务A 测试钩子：SW2 单击 → 90°/180°/270°/360° 循环 + 100Hz 遥测（验收后删） */
+    /* 仿真遥测回灌：主循环 ~20kHz / 200 = 100Hz，[TELE] 协议（cl /cl sim 数据源，勿删）
+       格式: [TELE] <t_ms>,<pos细分步>,<vel细分步/s>,<cur_mA>,<mode>,<state>（全 %d 定点） */
     if (++s_test_a_tel_cnt >= 200U)
     {
-        /* 主循环 ~20kHz / 200 = 100Hz 遥测：观察到位保持段摆振（pos 漂移/电流摆动） */
         s_test_a_tel_cnt = 0U;
         {
-            char tbuf[64];
-            snprintf(tbuf, sizeof(tbuf), "T:%ld,%ld,%ld,%u\r\n",
+            char tbuf[80];
+            snprintf(tbuf, sizeof(tbuf), "[TELE] %lu,%ld,%ld,%ld,%u,%u\r\n",
+                     (unsigned long)HAL_GetTick(),
                      (long)USR_Motor_GetRawPosition(),
                      (long)USR_Motor_GetRawVelocity(),
                      (long)(USR_Motor_GetCurrent() * 1000.0f),
+                     (unsigned)USR_Motor_GetMode(),
                      (unsigned)USR_Motor_GetState());
             DRV_Uart_SendString(tbuf);
         }
     }
+    /* 任务A 测试钩子：SW2 单击 → 90°/180°/270°/360° 循环（验收后删） */
     if (USR_Button_GetClick(USR_BUTTON2))
     {
         if (s_test_a_wait == 0U)

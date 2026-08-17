@@ -78,17 +78,18 @@ Section Cross References
     main.o(i.main) refers to encoder_calibrator_usr.o(i.USR_EncoderCalibrator_Trigger) for USR_EncoderCalibrator_Trigger
     main.o(i.main) refers to encoder_calibrator_usr.o(i.USR_EncoderCalibrator_TickMainLoop) for USR_EncoderCalibrator_TickMainLoop
     main.o(i.main) refers to motor_usr.o(i.USR_Motor_GetState) for USR_Motor_GetState
+    main.o(i.main) refers to motor_usr.o(i.USR_Motor_GetMode) for USR_Motor_GetMode
     main.o(i.main) refers to motor_usr.o(i.USR_Motor_GetCurrent) for USR_Motor_GetCurrent
     main.o(i.main) refers to fmul.o(x$fpl$fmul) for __aeabi_fmul
     main.o(i.main) refers to ffix.o(x$fpl$ffix) for __aeabi_f2iz
     main.o(i.main) refers to motor_usr.o(i.USR_Motor_GetRawVelocity) for USR_Motor_GetRawVelocity
     main.o(i.main) refers to motor_usr.o(i.USR_Motor_GetRawPosition) for USR_Motor_GetRawPosition
+    main.o(i.main) refers to stm32f1xx_hal.o(i.HAL_GetTick) for HAL_GetTick
     main.o(i.main) refers to noretval__2snprintf.o(.text) for __2snprintf
     main.o(i.main) refers to button_usr.o(i.USR_Button_GetClick) for USR_Button_GetClick
     main.o(i.main) refers to motor_usr.o(i.USR_Motor_SetMode) for USR_Motor_SetMode
     main.o(i.main) refers to motor_usr.o(i.USR_Motor_SetPosition) for USR_Motor_SetPosition
     main.o(i.main) refers to motor_usr.o(i.USR_Motor_IsCalibrated) for USR_Motor_IsCalibrated
-    main.o(i.main) refers to stm32f1xx_hal.o(i.HAL_GetTick) for HAL_GetTick
     main.o(i.main) refers to main.o(.data) for .data
     main.o(i.main) refers to tim.o(.bss) for htim1
     main.o(i.main) refers to main.o(.constdata) for .constdata
@@ -1629,7 +1630,6 @@ Removing Unused input sections from the image.
     Removing encoder_calibrator_usr.o(i.USR_EncoderCalibrator_GetRectifiedAngle), (20 bytes).
     Removing button_usr.o(i.USR_Button_GetLong), (28 bytes).
     Removing motor_usr.o(i.USR_Motor_ClearStallFlag), (16 bytes).
-    Removing motor_usr.o(i.USR_Motor_GetMode), (12 bytes).
     Removing motor_usr.o(i.USR_Motor_GetPosition), (44 bytes).
     Removing motor_usr.o(i.USR_Motor_GetRawDelta), (16 bytes).
     Removing motor_usr.o(i.USR_Motor_GetTelemetry), (56 bytes).
@@ -1659,7 +1659,7 @@ Removing Unused input sections from the image.
     Removing config_usr.o(i.USR_Config_TickMainLoop), (64 bytes).
     Removing config_usr.o(.bss), (52 bytes).
 
-547 unused section(s) (total 35966 bytes) removed from the image.
+546 unused section(s) (total 35954 bytes) removed from the image.
 
 ==============================================================================
 
@@ -1698,76 +1698,76 @@ Image Symbol Table
     ../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_tim.c 0x00000000   Number         0  stm32f1xx_hal_tim.o ABSOLUTE
     ../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_tim_ex.c 0x00000000   Number         0  stm32f1xx_hal_tim_ex.o ABSOLUTE
     ../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_uart.c 0x00000000   Number         0  stm32f1xx_hal_uart.o ABSOLUTE
-    ../clib/angel/boardlib.s                 0x00000000   Number         0  boardinit2.o ABSOLUTE
-    ../clib/angel/boardlib.s                 0x00000000   Number         0  boardinit1.o ABSOLUTE
     ../clib/angel/boardlib.s                 0x00000000   Number         0  boardshut.o ABSOLUTE
+    ../clib/angel/boardlib.s                 0x00000000   Number         0  boardinit1.o ABSOLUTE
+    ../clib/angel/boardlib.s                 0x00000000   Number         0  boardinit2.o ABSOLUTE
     ../clib/angel/boardlib.s                 0x00000000   Number         0  boardinit3.o ABSOLUTE
     ../clib/angel/dczerorl2.s                0x00000000   Number         0  __dczerorl2.o ABSOLUTE
     ../clib/angel/handlers.s                 0x00000000   Number         0  __scatter_zi.o ABSOLUTE
-    ../clib/angel/kernel.s                   0x00000000   Number         0  rtexit2.o ABSOLUTE
     ../clib/angel/kernel.s                   0x00000000   Number         0  __rtentry4.o ABSOLUTE
+    ../clib/angel/kernel.s                   0x00000000   Number         0  __rtentry2.o ABSOLUTE
+    ../clib/angel/kernel.s                   0x00000000   Number         0  rtexit2.o ABSOLUTE
     ../clib/angel/kernel.s                   0x00000000   Number         0  rtexit.o ABSOLUTE
     ../clib/angel/kernel.s                   0x00000000   Number         0  __rtentry.o ABSOLUTE
-    ../clib/angel/kernel.s                   0x00000000   Number         0  __rtentry2.o ABSOLUTE
     ../clib/angel/rt.s                       0x00000000   Number         0  rt_raise.o ABSOLUTE
     ../clib/angel/scatter.s                  0x00000000   Number         0  __scatter.o ABSOLUTE
     ../clib/angel/startup.s                  0x00000000   Number         0  __main.o ABSOLUTE
-    ../clib/angel/sys.s                      0x00000000   Number         0  indicate_semi.o ABSOLUTE
-    ../clib/angel/sys.s                      0x00000000   Number         0  use_no_semi.o ABSOLUTE
     ../clib/angel/sys.s                      0x00000000   Number         0  sys_stackheap_outer.o ABSOLUTE
     ../clib/angel/sys.s                      0x00000000   Number         0  libspace.o ABSOLUTE
-    ../clib/angel/sysapp.c                   0x00000000   Number         0  sys_exit.o ABSOLUTE
+    ../clib/angel/sys.s                      0x00000000   Number         0  indicate_semi.o ABSOLUTE
+    ../clib/angel/sys.s                      0x00000000   Number         0  use_no_semi.o ABSOLUTE
     ../clib/angel/sysapp.c                   0x00000000   Number         0  sys_command.o ABSOLUTE
+    ../clib/angel/sysapp.c                   0x00000000   Number         0  sys_exit.o ABSOLUTE
     ../clib/angel/sysapp.c                   0x00000000   Number         0  sys_wrch.o ABSOLUTE
-    ../clib/armsys.c                         0x00000000   Number         0  argv_veneer.o ABSOLUTE
-    ../clib/armsys.c                         0x00000000   Number         0  _get_argv_nomalloc.o ABSOLUTE
     ../clib/armsys.c                         0x00000000   Number         0  no_argv.o ABSOLUTE
+    ../clib/armsys.c                         0x00000000   Number         0  _get_argv_nomalloc.o ABSOLUTE
+    ../clib/armsys.c                         0x00000000   Number         0  argv_veneer.o ABSOLUTE
     ../clib/armsys.c                         0x00000000   Number         0  argv_veneer.o ABSOLUTE
     ../clib/heapalloc.c                      0x00000000   Number         0  hrguard.o ABSOLUTE
     ../clib/heapaux.c                        0x00000000   Number         0  heapauxi.o ABSOLUTE
-    ../clib/libinit.s                        0x00000000   Number         0  libinit2.o ABSOLUTE
     ../clib/libinit.s                        0x00000000   Number         0  libshutdown.o ABSOLUTE
-    ../clib/libinit.s                        0x00000000   Number         0  libshutdown2.o ABSOLUTE
     ../clib/libinit.s                        0x00000000   Number         0  libinit.o ABSOLUTE
+    ../clib/libinit.s                        0x00000000   Number         0  libshutdown2.o ABSOLUTE
+    ../clib/libinit.s                        0x00000000   Number         0  libinit2.o ABSOLUTE
     ../clib/longlong.s                       0x00000000   Number         0  llushr.o ABSOLUTE
     ../clib/memcpset.s                       0x00000000   Number         0  rt_memclr_w.o ABSOLUTE
     ../clib/misc.s                           0x00000000   Number         0  printf_stubs.o ABSOLUTE
+    ../clib/printf.c                         0x00000000   Number         0  _printf_dec.o ABSOLUTE
+    ../clib/printf.c                         0x00000000   Number         0  __printf.o ABSOLUTE
     ../clib/printf.c                         0x00000000   Number         0  noretval__2snprintf.o ABSOLUTE
-    ../clib/printf.c                         0x00000000   Number         0  __printf_nopercent.o ABSOLUTE
-    ../clib/printf.c                         0x00000000   Number         0  noretval__2sprintf.o ABSOLUTE
     ../clib/printf.c                         0x00000000   Number         0  _printf_intcommon.o ABSOLUTE
     ../clib/printf.c                         0x00000000   Number         0  _printf_char_common.o ABSOLUTE
-    ../clib/printf.c                         0x00000000   Number         0  _printf_dec.o ABSOLUTE
     ../clib/printf.c                         0x00000000   Number         0  _sputc.o ABSOLUTE
+    ../clib/printf.c                         0x00000000   Number         0  noretval__2sprintf.o ABSOLUTE
+    ../clib/printf.c                         0x00000000   Number         0  __2snprintf.o ABSOLUTE
     ../clib/printf.c                         0x00000000   Number         0  _snputc.o ABSOLUTE
     ../clib/printf.c                         0x00000000   Number         0  __2sprintf.o ABSOLUTE
-    ../clib/printf.c                         0x00000000   Number         0  __2snprintf.o ABSOLUTE
-    ../clib/printf.c                         0x00000000   Number         0  __printf.o ABSOLUTE
-    ../clib/printf.c                         0x00000000   Number         0  __printf_flags_ss_wp.o ABSOLUTE
-    ../clib/printf.c                         0x00000000   Number         0  __printf_ss_wp.o ABSOLUTE
-    ../clib/printf.c                         0x00000000   Number         0  __printf_flags_wp.o ABSOLUTE
-    ../clib/printf.c                         0x00000000   Number         0  __printf_wp.o ABSOLUTE
-    ../clib/printf.c                         0x00000000   Number         0  __printf_flags_ss.o ABSOLUTE
     ../clib/printf.c                         0x00000000   Number         0  __printf_ss.o ABSOLUTE
+    ../clib/printf.c                         0x00000000   Number         0  __printf_nopercent.o ABSOLUTE
+    ../clib/printf.c                         0x00000000   Number         0  __printf_flags_ss.o ABSOLUTE
+    ../clib/printf.c                         0x00000000   Number         0  __printf_wp.o ABSOLUTE
+    ../clib/printf.c                         0x00000000   Number         0  __printf_flags_wp.o ABSOLUTE
+    ../clib/printf.c                         0x00000000   Number         0  __printf_ss_wp.o ABSOLUTE
+    ../clib/printf.c                         0x00000000   Number         0  __printf_flags_ss_wp.o ABSOLUTE
     ../clib/printf.c                         0x00000000   Number         0  __printf_flags.o ABSOLUTE
     ../clib/printf_percent.s                 0x00000000   Number         0  _printf_d.o ABSOLUTE
-    ../clib/printf_percent.s                 0x00000000   Number         0  _printf_percent_end.o ABSOLUTE
-    ../clib/printf_percent.s                 0x00000000   Number         0  _printf_percent.o ABSOLUTE
     ../clib/printf_percent.s                 0x00000000   Number         0  _printf_u.o ABSOLUTE
-    ../clib/signal.c                         0x00000000   Number         0  defsig_segv_inner.o ABSOLUTE
-    ../clib/signal.c                         0x00000000   Number         0  defsig_cppl_inner.o ABSOLUTE
-    ../clib/signal.c                         0x00000000   Number         0  defsig_pvfn_inner.o ABSOLUTE
-    ../clib/signal.c                         0x00000000   Number         0  defsig_stak_inner.o ABSOLUTE
-    ../clib/signal.c                         0x00000000   Number         0  defsig_rtred_inner.o ABSOLUTE
-    ../clib/signal.c                         0x00000000   Number         0  defsig_fpe_inner.o ABSOLUTE
+    ../clib/printf_percent.s                 0x00000000   Number         0  _printf_percent.o ABSOLUTE
+    ../clib/printf_percent.s                 0x00000000   Number         0  _printf_percent_end.o ABSOLUTE
     ../clib/signal.c                         0x00000000   Number         0  defsig_abrt_inner.o ABSOLUTE
-    ../clib/signal.c                         0x00000000   Number         0  defsig_general.o ABSOLUTE
-    ../clib/signal.c                         0x00000000   Number         0  __raise.o ABSOLUTE
-    ../clib/signal.c                         0x00000000   Number         0  defsig_rtmem_inner.o ABSOLUTE
-    ../clib/signal.c                         0x00000000   Number         0  defsig_exit.o ABSOLUTE
-    ../clib/signal.c                         0x00000000   Number         0  defsig_rtmem_formal.o ABSOLUTE
+    ../clib/signal.c                         0x00000000   Number         0  defsig_fpe_inner.o ABSOLUTE
+    ../clib/signal.c                         0x00000000   Number         0  defsig_rtred_inner.o ABSOLUTE
+    ../clib/signal.c                         0x00000000   Number         0  defsig_stak_inner.o ABSOLUTE
+    ../clib/signal.c                         0x00000000   Number         0  defsig_pvfn_inner.o ABSOLUTE
+    ../clib/signal.c                         0x00000000   Number         0  defsig_cppl_inner.o ABSOLUTE
+    ../clib/signal.c                         0x00000000   Number         0  defsig_segv_inner.o ABSOLUTE
     ../clib/signal.c                         0x00000000   Number         0  defsig_other.o ABSOLUTE
+    ../clib/signal.c                         0x00000000   Number         0  defsig_rtmem_formal.o ABSOLUTE
     ../clib/signal.c                         0x00000000   Number         0  defsig_rtmem_outer.o ABSOLUTE
+    ../clib/signal.c                         0x00000000   Number         0  defsig_exit.o ABSOLUTE
+    ../clib/signal.c                         0x00000000   Number         0  defsig_rtmem_inner.o ABSOLUTE
+    ../clib/signal.c                         0x00000000   Number         0  __raise.o ABSOLUTE
+    ../clib/signal.c                         0x00000000   Number         0  defsig_general.o ABSOLUTE
     ../clib/signal.s                         0x00000000   Number         0  defsig.o ABSOLUTE
     ../clib/stdlib.c                         0x00000000   Number         0  exit.o ABSOLUTE
     ../clib/string.c                         0x00000000   Number         0  strlen.o ABSOLUTE
@@ -2139,39 +2139,40 @@ Image Symbol Table
     i.USR_MotionPlanner_VelocityTracker_Init 0x080046cc   Section        0  motion_planner_usr.o(i.USR_MotionPlanner_VelocityTracker_Init)
     i.USR_MotionPlanner_VelocityTracker_NewTask 0x080046e0   Section        0  motion_planner_usr.o(i.USR_MotionPlanner_VelocityTracker_NewTask)
     i.USR_Motor_GetCurrent                   0x080046f0   Section        0  motor_usr.o(i.USR_Motor_GetCurrent)
-    i.USR_Motor_GetRawPosition               0x0800470c   Section        0  motor_usr.o(i.USR_Motor_GetRawPosition)
-    i.USR_Motor_GetRawVelocity               0x08004718   Section        0  motor_usr.o(i.USR_Motor_GetRawVelocity)
-    i.USR_Motor_GetState                     0x08004724   Section        0  motor_usr.o(i.USR_Motor_GetState)
-    i.USR_Motor_Init                         0x08004730   Section        0  motor_usr.o(i.USR_Motor_Init)
-    i.USR_Motor_IsCalibrated                 0x080047bc   Section        0  motor_usr.o(i.USR_Motor_IsCalibrated)
-    i.USR_Motor_SetConfig                    0x080047c0   Section        0  motor_usr.o(i.USR_Motor_SetConfig)
-    i.USR_Motor_SetMode                      0x080047cc   Section        0  motor_usr.o(i.USR_Motor_SetMode)
-    i.USR_Motor_SetPosition                  0x080047d8   Section        0  motor_usr.o(i.USR_Motor_SetPosition)
-    i.USR_Motor_Tick20kHz                    0x080047fc   Section        0  motor_usr.o(i.USR_Motor_Tick20kHz)
-    i.USR_TB67H450_Brake                     0x08004bb8   Section        0  tb67h450_usr.o(i.USR_TB67H450_Brake)
-    i.USR_TB67H450_Init                      0x08004bd6   Section        0  tb67h450_usr.o(i.USR_TB67H450_Init)
-    i.USR_TB67H450_SetFocCurrentVector       0x08004bdc   Section        0  tb67h450_usr.o(i.USR_TB67H450_SetFocCurrentVector)
-    i.USR_TB67H450_Sleep                     0x08004c84   Section        0  tb67h450_usr.o(i.USR_TB67H450_Sleep)
-    i.UsageFault_Handler                     0x08004ca2   Section        0  stm32f1xx_it.o(i.UsageFault_Handler)
-    i.__NVIC_SetPriority                     0x08004ca4   Section        0  stm32f1xx_hal_cortex.o(i.__NVIC_SetPriority)
-    __NVIC_SetPriority                       0x08004ca5   Thumb Code    32  stm32f1xx_hal_cortex.o(i.__NVIC_SetPriority)
-    i.main                                   0x08004cc4   Section        0  main.o(i.main)
-    x$fpl$fdiv                               0x08004f94   Section      388  fdiv.o(x$fpl$fdiv)
-    _fdiv1                                   0x08004f95   Thumb Code     0  fdiv.o(x$fpl$fdiv)
-    x$fpl$ffix                               0x08005118   Section       54  ffix.o(x$fpl$ffix)
-    x$fpl$fflt                               0x08005150   Section       48  fflt_clz.o(x$fpl$fflt)
-    x$fpl$fmul                               0x08005180   Section      258  fmul.o(x$fpl$fmul)
-    x$fpl$fnaninf                            0x08005282   Section      140  fnaninf.o(x$fpl$fnaninf)
-    x$fpl$fretinf                            0x0800530e   Section       10  fretinf.o(x$fpl$fretinf)
-    .constdata                               0x08005318   Section       16  main.o(.constdata)
-    x$fpl$usenofp                            0x08005318   Section        0  usenofp.o(x$fpl$usenofp)
-    s_test_a_goals                           0x08005318   Data          16  main.o(.constdata)
-    .constdata                               0x08005328   Section       18  stm32f1xx_hal_rcc.o(.constdata)
-    aPredivFactorTable                       0x08005328   Data           2  stm32f1xx_hal_rcc.o(.constdata)
-    aPLLMULFactorTable                       0x0800532a   Data          16  stm32f1xx_hal_rcc.o(.constdata)
-    .constdata                               0x0800533a   Section       16  system_stm32f1xx.o(.constdata)
-    .constdata                               0x0800534a   Section        8  system_stm32f1xx.o(.constdata)
-    .constdata                               0x08005352   Section     2050  sin_form_usr.o(.constdata)
+    i.USR_Motor_GetMode                      0x0800470c   Section        0  motor_usr.o(i.USR_Motor_GetMode)
+    i.USR_Motor_GetRawPosition               0x08004718   Section        0  motor_usr.o(i.USR_Motor_GetRawPosition)
+    i.USR_Motor_GetRawVelocity               0x08004724   Section        0  motor_usr.o(i.USR_Motor_GetRawVelocity)
+    i.USR_Motor_GetState                     0x08004730   Section        0  motor_usr.o(i.USR_Motor_GetState)
+    i.USR_Motor_Init                         0x0800473c   Section        0  motor_usr.o(i.USR_Motor_Init)
+    i.USR_Motor_IsCalibrated                 0x080047c8   Section        0  motor_usr.o(i.USR_Motor_IsCalibrated)
+    i.USR_Motor_SetConfig                    0x080047cc   Section        0  motor_usr.o(i.USR_Motor_SetConfig)
+    i.USR_Motor_SetMode                      0x080047d8   Section        0  motor_usr.o(i.USR_Motor_SetMode)
+    i.USR_Motor_SetPosition                  0x080047e4   Section        0  motor_usr.o(i.USR_Motor_SetPosition)
+    i.USR_Motor_Tick20kHz                    0x08004808   Section        0  motor_usr.o(i.USR_Motor_Tick20kHz)
+    i.USR_TB67H450_Brake                     0x08004bc4   Section        0  tb67h450_usr.o(i.USR_TB67H450_Brake)
+    i.USR_TB67H450_Init                      0x08004be2   Section        0  tb67h450_usr.o(i.USR_TB67H450_Init)
+    i.USR_TB67H450_SetFocCurrentVector       0x08004be8   Section        0  tb67h450_usr.o(i.USR_TB67H450_SetFocCurrentVector)
+    i.USR_TB67H450_Sleep                     0x08004c90   Section        0  tb67h450_usr.o(i.USR_TB67H450_Sleep)
+    i.UsageFault_Handler                     0x08004cae   Section        0  stm32f1xx_it.o(i.UsageFault_Handler)
+    i.__NVIC_SetPriority                     0x08004cb0   Section        0  stm32f1xx_hal_cortex.o(i.__NVIC_SetPriority)
+    __NVIC_SetPriority                       0x08004cb1   Thumb Code    32  stm32f1xx_hal_cortex.o(i.__NVIC_SetPriority)
+    i.main                                   0x08004cd0   Section        0  main.o(i.main)
+    x$fpl$fdiv                               0x08004fbc   Section      388  fdiv.o(x$fpl$fdiv)
+    _fdiv1                                   0x08004fbd   Thumb Code     0  fdiv.o(x$fpl$fdiv)
+    x$fpl$ffix                               0x08005140   Section       54  ffix.o(x$fpl$ffix)
+    x$fpl$fflt                               0x08005178   Section       48  fflt_clz.o(x$fpl$fflt)
+    x$fpl$fmul                               0x080051a8   Section      258  fmul.o(x$fpl$fmul)
+    x$fpl$fnaninf                            0x080052aa   Section      140  fnaninf.o(x$fpl$fnaninf)
+    x$fpl$fretinf                            0x08005336   Section       10  fretinf.o(x$fpl$fretinf)
+    .constdata                               0x08005340   Section       16  main.o(.constdata)
+    x$fpl$usenofp                            0x08005340   Section        0  usenofp.o(x$fpl$usenofp)
+    s_test_a_goals                           0x08005340   Data          16  main.o(.constdata)
+    .constdata                               0x08005350   Section       18  stm32f1xx_hal_rcc.o(.constdata)
+    aPredivFactorTable                       0x08005350   Data           2  stm32f1xx_hal_rcc.o(.constdata)
+    aPLLMULFactorTable                       0x08005352   Data          16  stm32f1xx_hal_rcc.o(.constdata)
+    .constdata                               0x08005362   Section       16  system_stm32f1xx.o(.constdata)
+    .constdata                               0x08005372   Section        8  system_stm32f1xx.o(.constdata)
+    .constdata                               0x0800537a   Section     2050  sin_form_usr.o(.constdata)
     .data                                    0x20000000   Section       60  main.o(.data)
     s_test_a_idx                             0x20000000   Data           1  main.o(.data)
     s_test_a_wait                            0x20000001   Data           1  main.o(.data)
@@ -2648,37 +2649,38 @@ Image Symbol Table
     USR_MotionPlanner_VelocityTracker_Init   0x080046cd   Thumb Code    14  motion_planner_usr.o(i.USR_MotionPlanner_VelocityTracker_Init)
     USR_MotionPlanner_VelocityTracker_NewTask 0x080046e1   Thumb Code    10  motion_planner_usr.o(i.USR_MotionPlanner_VelocityTracker_NewTask)
     USR_Motor_GetCurrent                     0x080046f1   Thumb Code    20  motor_usr.o(i.USR_Motor_GetCurrent)
-    USR_Motor_GetRawPosition                 0x0800470d   Thumb Code     6  motor_usr.o(i.USR_Motor_GetRawPosition)
-    USR_Motor_GetRawVelocity                 0x08004719   Thumb Code     6  motor_usr.o(i.USR_Motor_GetRawVelocity)
-    USR_Motor_GetState                       0x08004725   Thumb Code     6  motor_usr.o(i.USR_Motor_GetState)
-    USR_Motor_Init                           0x08004731   Thumb Code   130  motor_usr.o(i.USR_Motor_Init)
-    USR_Motor_IsCalibrated                   0x080047bd   Thumb Code     4  motor_usr.o(i.USR_Motor_IsCalibrated)
-    USR_Motor_SetConfig                      0x080047c1   Thumb Code     6  motor_usr.o(i.USR_Motor_SetConfig)
-    USR_Motor_SetMode                        0x080047cd   Thumb Code     6  motor_usr.o(i.USR_Motor_SetMode)
-    USR_Motor_SetPosition                    0x080047d9   Thumb Code    30  motor_usr.o(i.USR_Motor_SetPosition)
-    USR_Motor_Tick20kHz                      0x080047fd   Thumb Code   948  motor_usr.o(i.USR_Motor_Tick20kHz)
-    USR_TB67H450_Brake                       0x08004bb9   Thumb Code    30  tb67h450_usr.o(i.USR_TB67H450_Brake)
-    USR_TB67H450_Init                        0x08004bd7   Thumb Code     4  tb67h450_usr.o(i.USR_TB67H450_Init)
-    USR_TB67H450_SetFocCurrentVector         0x08004bdd   Thumb Code   160  tb67h450_usr.o(i.USR_TB67H450_SetFocCurrentVector)
-    USR_TB67H450_Sleep                       0x08004c85   Thumb Code    30  tb67h450_usr.o(i.USR_TB67H450_Sleep)
-    UsageFault_Handler                       0x08004ca3   Thumb Code     2  stm32f1xx_it.o(i.UsageFault_Handler)
-    main                                     0x08004cc5   Thumb Code   490  main.o(i.main)
-    __aeabi_fdiv                             0x08004f95   Thumb Code     0  fdiv.o(x$fpl$fdiv)
-    _fdiv                                    0x08004f95   Thumb Code   384  fdiv.o(x$fpl$fdiv)
-    __aeabi_f2iz                             0x08005119   Thumb Code     0  ffix.o(x$fpl$ffix)
-    _ffix                                    0x08005119   Thumb Code    54  ffix.o(x$fpl$ffix)
-    __aeabi_i2f                              0x08005151   Thumb Code     0  fflt_clz.o(x$fpl$fflt)
-    _fflt                                    0x08005151   Thumb Code    48  fflt_clz.o(x$fpl$fflt)
-    __aeabi_fmul                             0x08005181   Thumb Code     0  fmul.o(x$fpl$fmul)
-    _fmul                                    0x08005181   Thumb Code   258  fmul.o(x$fpl$fmul)
-    __fpl_fnaninf                            0x08005283   Thumb Code   140  fnaninf.o(x$fpl$fnaninf)
-    __fpl_fretinf                            0x0800530f   Thumb Code    10  fretinf.o(x$fpl$fretinf)
-    __I$use$fp                               0x08005318   Number         0  usenofp.o(x$fpl$usenofp)
-    AHBPrescTable                            0x0800533a   Data          16  system_stm32f1xx.o(.constdata)
-    APBPrescTable                            0x0800534a   Data           8  system_stm32f1xx.o(.constdata)
-    USR_sin_pi_m2                            0x08005352   Data        2050  sin_form_usr.o(.constdata)
-    Region$$Table$$Base                      0x08005b54   Number         0  anon$$obj.o(Region$$Table)
-    Region$$Table$$Limit                     0x08005b74   Number         0  anon$$obj.o(Region$$Table)
+    USR_Motor_GetMode                        0x0800470d   Thumb Code     6  motor_usr.o(i.USR_Motor_GetMode)
+    USR_Motor_GetRawPosition                 0x08004719   Thumb Code     6  motor_usr.o(i.USR_Motor_GetRawPosition)
+    USR_Motor_GetRawVelocity                 0x08004725   Thumb Code     6  motor_usr.o(i.USR_Motor_GetRawVelocity)
+    USR_Motor_GetState                       0x08004731   Thumb Code     6  motor_usr.o(i.USR_Motor_GetState)
+    USR_Motor_Init                           0x0800473d   Thumb Code   130  motor_usr.o(i.USR_Motor_Init)
+    USR_Motor_IsCalibrated                   0x080047c9   Thumb Code     4  motor_usr.o(i.USR_Motor_IsCalibrated)
+    USR_Motor_SetConfig                      0x080047cd   Thumb Code     6  motor_usr.o(i.USR_Motor_SetConfig)
+    USR_Motor_SetMode                        0x080047d9   Thumb Code     6  motor_usr.o(i.USR_Motor_SetMode)
+    USR_Motor_SetPosition                    0x080047e5   Thumb Code    30  motor_usr.o(i.USR_Motor_SetPosition)
+    USR_Motor_Tick20kHz                      0x08004809   Thumb Code   948  motor_usr.o(i.USR_Motor_Tick20kHz)
+    USR_TB67H450_Brake                       0x08004bc5   Thumb Code    30  tb67h450_usr.o(i.USR_TB67H450_Brake)
+    USR_TB67H450_Init                        0x08004be3   Thumb Code     4  tb67h450_usr.o(i.USR_TB67H450_Init)
+    USR_TB67H450_SetFocCurrentVector         0x08004be9   Thumb Code   160  tb67h450_usr.o(i.USR_TB67H450_SetFocCurrentVector)
+    USR_TB67H450_Sleep                       0x08004c91   Thumb Code    30  tb67h450_usr.o(i.USR_TB67H450_Sleep)
+    UsageFault_Handler                       0x08004caf   Thumb Code     2  stm32f1xx_it.o(i.UsageFault_Handler)
+    main                                     0x08004cd1   Thumb Code   506  main.o(i.main)
+    __aeabi_fdiv                             0x08004fbd   Thumb Code     0  fdiv.o(x$fpl$fdiv)
+    _fdiv                                    0x08004fbd   Thumb Code   384  fdiv.o(x$fpl$fdiv)
+    __aeabi_f2iz                             0x08005141   Thumb Code     0  ffix.o(x$fpl$ffix)
+    _ffix                                    0x08005141   Thumb Code    54  ffix.o(x$fpl$ffix)
+    __aeabi_i2f                              0x08005179   Thumb Code     0  fflt_clz.o(x$fpl$fflt)
+    _fflt                                    0x08005179   Thumb Code    48  fflt_clz.o(x$fpl$fflt)
+    __aeabi_fmul                             0x080051a9   Thumb Code     0  fmul.o(x$fpl$fmul)
+    _fmul                                    0x080051a9   Thumb Code   258  fmul.o(x$fpl$fmul)
+    __fpl_fnaninf                            0x080052ab   Thumb Code   140  fnaninf.o(x$fpl$fnaninf)
+    __fpl_fretinf                            0x08005337   Thumb Code    10  fretinf.o(x$fpl$fretinf)
+    __I$use$fp                               0x08005340   Number         0  usenofp.o(x$fpl$usenofp)
+    AHBPrescTable                            0x08005362   Data          16  system_stm32f1xx.o(.constdata)
+    APBPrescTable                            0x08005372   Data           8  system_stm32f1xx.o(.constdata)
+    USR_sin_pi_m2                            0x0800537a   Data        2050  sin_form_usr.o(.constdata)
+    Region$$Table$$Base                      0x08005b7c   Number         0  anon$$obj.o(Region$$Table)
+    Region$$Table$$Limit                     0x08005b9c   Number         0  anon$$obj.o(Region$$Table)
     uwTickFreq                               0x2000003c   Data           1  stm32f1xx_hal.o(.data)
     uwTickPrio                               0x20000040   Data           4  stm32f1xx_hal.o(.data)
     uwTick                                   0x20000044   Data           4  stm32f1xx_hal.o(.data)
@@ -2710,9 +2712,9 @@ Memory Map of the image
 
   Image Entry point : 0x08000131
 
-  Load Region LR_IROM1 (Base: 0x08000000, Size: 0x00005cfc, Max: 0x00080000, ABSOLUTE, COMPRESSED[0x00005ba4])
+  Load Region LR_IROM1 (Base: 0x08000000, Size: 0x00005d24, Max: 0x00080000, ABSOLUTE, COMPRESSED[0x00005bcc])
 
-    Execution Region ER_IROM1 (Exec base: 0x08000000, Load base: 0x08000000, Size: 0x00005b74, Max: 0x00080000, ABSOLUTE)
+    Execution Region ER_IROM1 (Exec base: 0x08000000, Load base: 0x08000000, Size: 0x00005b9c, Max: 0x00080000, ABSOLUTE)
 
     Exec Addr    Load Addr    Size         Type   Attr      Idx    E Section Name        Object
 
@@ -3008,40 +3010,41 @@ Memory Map of the image
     0x080046cc   0x080046cc   0x00000014   Code   RO         4609    i.USR_MotionPlanner_VelocityTracker_Init  motion_planner_usr.o
     0x080046e0   0x080046e0   0x00000010   Code   RO         4610    i.USR_MotionPlanner_VelocityTracker_NewTask  motion_planner_usr.o
     0x080046f0   0x080046f0   0x0000001c   Code   RO         4415    i.USR_Motor_GetCurrent  motor_usr.o
-    0x0800470c   0x0800470c   0x0000000c   Code   RO         4419    i.USR_Motor_GetRawPosition  motor_usr.o
-    0x08004718   0x08004718   0x0000000c   Code   RO         4420    i.USR_Motor_GetRawVelocity  motor_usr.o
-    0x08004724   0x08004724   0x0000000c   Code   RO         4421    i.USR_Motor_GetState  motor_usr.o
-    0x08004730   0x08004730   0x0000008c   Code   RO         4424    i.USR_Motor_Init    motor_usr.o
-    0x080047bc   0x080047bc   0x00000004   Code   RO         4425    i.USR_Motor_IsCalibrated  motor_usr.o
-    0x080047c0   0x080047c0   0x0000000c   Code   RO         4427    i.USR_Motor_SetConfig  motor_usr.o
-    0x080047cc   0x080047cc   0x0000000c   Code   RO         4430    i.USR_Motor_SetMode  motor_usr.o
-    0x080047d8   0x080047d8   0x00000024   Code   RO         4431    i.USR_Motor_SetPosition  motor_usr.o
-    0x080047fc   0x080047fc   0x000003bc   Code   RO         4433    i.USR_Motor_Tick20kHz  motor_usr.o
-    0x08004bb8   0x08004bb8   0x0000001e   Code   RO         4224    i.USR_TB67H450_Brake  tb67h450_usr.o
-    0x08004bd6   0x08004bd6   0x00000004   Code   RO         4225    i.USR_TB67H450_Init  tb67h450_usr.o
-    0x08004bda   0x08004bda   0x00000002   PAD
-    0x08004bdc   0x08004bdc   0x000000a8   Code   RO         4226    i.USR_TB67H450_SetFocCurrentVector  tb67h450_usr.o
-    0x08004c84   0x08004c84   0x0000001e   Code   RO         4227    i.USR_TB67H450_Sleep  tb67h450_usr.o
-    0x08004ca2   0x08004ca2   0x00000002   Code   RO          525    i.UsageFault_Handler  stm32f1xx_it.o
-    0x08004ca4   0x08004ca4   0x00000020   Code   RO         1489    i.__NVIC_SetPriority  stm32f1xx_hal_cortex.o
-    0x08004cc4   0x08004cc4   0x000002d0   Code   RO           16    i.main              main.o
-    0x08004f94   0x08004f94   0x00000184   Code   RO         4896    x$fpl$fdiv          fz_ws.l(fdiv.o)
-    0x08005118   0x08005118   0x00000036   Code   RO         4899    x$fpl$ffix          fz_ws.l(ffix.o)
-    0x0800514e   0x0800514e   0x00000002   PAD
-    0x08005150   0x08005150   0x00000030   Code   RO         4904    x$fpl$fflt          fz_ws.l(fflt_clz.o)
-    0x08005180   0x08005180   0x00000102   Code   RO         4909    x$fpl$fmul          fz_ws.l(fmul.o)
-    0x08005282   0x08005282   0x0000008c   Code   RO         4921    x$fpl$fnaninf       fz_ws.l(fnaninf.o)
-    0x0800530e   0x0800530e   0x0000000a   Code   RO         4923    x$fpl$fretinf       fz_ws.l(fretinf.o)
-    0x08005318   0x08005318   0x00000000   Code   RO         4925    x$fpl$usenofp       fz_ws.l(usenofp.o)
-    0x08005318   0x08005318   0x00000010   Data   RO           17    .constdata          main.o
-    0x08005328   0x08005328   0x00000012   Data   RO         1187    .constdata          stm32f1xx_hal_rcc.o
-    0x0800533a   0x0800533a   0x00000010   Data   RO         3870    .constdata          system_stm32f1xx.o
-    0x0800534a   0x0800534a   0x00000008   Data   RO         3871    .constdata          system_stm32f1xx.o
-    0x08005352   0x08005352   0x00000802   Data   RO         4212    .constdata          sin_form_usr.o
-    0x08005b54   0x08005b54   0x00000020   Data   RO         5082    Region$$Table       anon$$obj.o
+    0x0800470c   0x0800470c   0x0000000c   Code   RO         4416    i.USR_Motor_GetMode  motor_usr.o
+    0x08004718   0x08004718   0x0000000c   Code   RO         4419    i.USR_Motor_GetRawPosition  motor_usr.o
+    0x08004724   0x08004724   0x0000000c   Code   RO         4420    i.USR_Motor_GetRawVelocity  motor_usr.o
+    0x08004730   0x08004730   0x0000000c   Code   RO         4421    i.USR_Motor_GetState  motor_usr.o
+    0x0800473c   0x0800473c   0x0000008c   Code   RO         4424    i.USR_Motor_Init    motor_usr.o
+    0x080047c8   0x080047c8   0x00000004   Code   RO         4425    i.USR_Motor_IsCalibrated  motor_usr.o
+    0x080047cc   0x080047cc   0x0000000c   Code   RO         4427    i.USR_Motor_SetConfig  motor_usr.o
+    0x080047d8   0x080047d8   0x0000000c   Code   RO         4430    i.USR_Motor_SetMode  motor_usr.o
+    0x080047e4   0x080047e4   0x00000024   Code   RO         4431    i.USR_Motor_SetPosition  motor_usr.o
+    0x08004808   0x08004808   0x000003bc   Code   RO         4433    i.USR_Motor_Tick20kHz  motor_usr.o
+    0x08004bc4   0x08004bc4   0x0000001e   Code   RO         4224    i.USR_TB67H450_Brake  tb67h450_usr.o
+    0x08004be2   0x08004be2   0x00000004   Code   RO         4225    i.USR_TB67H450_Init  tb67h450_usr.o
+    0x08004be6   0x08004be6   0x00000002   PAD
+    0x08004be8   0x08004be8   0x000000a8   Code   RO         4226    i.USR_TB67H450_SetFocCurrentVector  tb67h450_usr.o
+    0x08004c90   0x08004c90   0x0000001e   Code   RO         4227    i.USR_TB67H450_Sleep  tb67h450_usr.o
+    0x08004cae   0x08004cae   0x00000002   Code   RO          525    i.UsageFault_Handler  stm32f1xx_it.o
+    0x08004cb0   0x08004cb0   0x00000020   Code   RO         1489    i.__NVIC_SetPriority  stm32f1xx_hal_cortex.o
+    0x08004cd0   0x08004cd0   0x000002ec   Code   RO           16    i.main              main.o
+    0x08004fbc   0x08004fbc   0x00000184   Code   RO         4896    x$fpl$fdiv          fz_ws.l(fdiv.o)
+    0x08005140   0x08005140   0x00000036   Code   RO         4899    x$fpl$ffix          fz_ws.l(ffix.o)
+    0x08005176   0x08005176   0x00000002   PAD
+    0x08005178   0x08005178   0x00000030   Code   RO         4904    x$fpl$fflt          fz_ws.l(fflt_clz.o)
+    0x080051a8   0x080051a8   0x00000102   Code   RO         4909    x$fpl$fmul          fz_ws.l(fmul.o)
+    0x080052aa   0x080052aa   0x0000008c   Code   RO         4921    x$fpl$fnaninf       fz_ws.l(fnaninf.o)
+    0x08005336   0x08005336   0x0000000a   Code   RO         4923    x$fpl$fretinf       fz_ws.l(fretinf.o)
+    0x08005340   0x08005340   0x00000000   Code   RO         4925    x$fpl$usenofp       fz_ws.l(usenofp.o)
+    0x08005340   0x08005340   0x00000010   Data   RO           17    .constdata          main.o
+    0x08005350   0x08005350   0x00000012   Data   RO         1187    .constdata          stm32f1xx_hal_rcc.o
+    0x08005362   0x08005362   0x00000010   Data   RO         3870    .constdata          system_stm32f1xx.o
+    0x08005372   0x08005372   0x00000008   Data   RO         3871    .constdata          system_stm32f1xx.o
+    0x0800537a   0x0800537a   0x00000802   Data   RO         4212    .constdata          sin_form_usr.o
+    0x08005b7c   0x08005b7c   0x00000020   Data   RO         5082    Region$$Table       anon$$obj.o
 
 
-    Execution Region RW_IRAM1 (Exec base: 0x20000000, Load base: 0x08005b74, Size: 0x00000f20, Max: 0x00010000, ABSOLUTE, COMPRESSED[0x00000030])
+    Execution Region RW_IRAM1 (Exec base: 0x20000000, Load base: 0x08005b9c, Size: 0x00000f20, Max: 0x00010000, ABSOLUTE, COMPRESSED[0x00000030])
 
     Exec Addr    Load Addr    Size         Type   Attr      Idx    E Section Name        Object
 
@@ -3087,9 +3090,9 @@ Image component sizes
        174          6          0         16          0       3646   flash_drv.o
        240         16          0          0          0        995   gpio.o
         54          6          0          0          0       1837   led_drv.o
-       942        244         16         60          0     530700   main.o
+       970        256         16         60          0     530700   main.o
       1212        134          0        128          0      16345   motion_planner_usr.o
-      1892        142          0        108         16      12786   motor_usr.o
+      1904        148          0        108         16      13246   motor_usr.o
        160         10          0          0          0       2015   mt6816_drv.o
        164         34          0          8          0       3937   mt6816_usr.o
          0          0       2050          0          0        552   sin_form_usr.o
@@ -3120,7 +3123,7 @@ Image component sizes
        552         48          0          0        416       2759   usart.o
 
     ----------------------------------------------------------------------
-     18880       1830       2444        392       3384     720515   Object Totals
+     18920       1848       2444        392       3384     720975   Object Totals
          0          0         32          0          0          0   (incl. Generated)
         30          0          0          0          4          0   (incl. Padding)
 
@@ -3192,15 +3195,15 @@ Image component sizes
 
       Code (inc. data)   RO Data    RW Data    ZI Data      Debug   
 
-     20968       1966       2444        392       3480     710351   Grand Totals
-     20968       1966       2444         48       3480     710351   ELF Image Totals (compressed)
-     20968       1966       2444         48          0          0   ROM Totals
+     21008       1984       2444        392       3480     710759   Grand Totals
+     21008       1984       2444         48       3480     710759   ELF Image Totals (compressed)
+     21008       1984       2444         48          0          0   ROM Totals
 
 ==============================================================================
 
-    Total RO  Size (Code + RO Data)                23412 (  22.86kB)
+    Total RO  Size (Code + RO Data)                23452 (  22.90kB)
     Total RW  Size (RW Data + ZI Data)              3872 (   3.78kB)
-    Total ROM Size (Code + RO Data + RW Data)      23460 (  22.91kB)
+    Total ROM Size (Code + RO Data + RW Data)      23500 (  22.95kB)
 
 ==============================================================================
 

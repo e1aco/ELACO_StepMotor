@@ -79,6 +79,14 @@ Python: C:\Users\electronic\AppData\Local\Programs\Python\Python312\python.exe  
 | T3 | MT6816 SPI 单次读（含≤3 重试） | USR_MT6816_UpdateAngle 入口/出口 | 软件 | 15µs（9MHz 每帧 1.78µs × 2 帧 × 3 重试=10.7µs + HAL 轮询余量；TSCK≥64ns） | 12µs（2026-08-15 DWT；调参：HAL 28µs→寄存器级+SPE 前置使能，见下注） | 每次变更都测 | [x] |
 | T4 | ADC1 编码器供电采样（HAL Start+Poll 路径） | tim_test 测试序列（业务未接入，临时触发） | 软件 | 29µs（memory adc1_ch0_sampling 239.5cycles@12MHz 参考；CubeMX 实际 1.5cycles 待核对） | 27µs（2026-08-15 DWT） | 每次变更都测 | [x] |
 
+# 仿真配置 (Simulation) — AI 维护（/cl sim 使用）
+> 仿真闭环：定参→实测对照→回灌校准。方法/坑位见 cl knowledge/matlab_sim_loop.md；命令细节 details/sim.md。
+> 仿真目录: E:\Desktop\XM\ELACO_StepMotor\Simulation\
+> MATLAB: E:\MATLAB\bin\matlab.exe（R2025a；env MATLAB 可覆盖；只经 cl tools/matlab_run.py 调用）
+> 遥测 CSV 协议: [TELE] <t_ms>,<pos细分步>,<vel细分步/s>,<cur_mA>,<mode>,<state>（全 %d 定点，发送在主循环）
+> 状态文件: .cl/sim/state.md
+> 对照表: .cl/sim/compare_table.md
+
 # 任务队列 (Task Queue)
 > 状态标记说明:
 > [ ] 未开始
@@ -116,6 +124,7 @@ Python: C:\Users\electronic\AppData\Local\Programs\Python\Python312\python.exe  
 - [!] 到位精度优化B: detent 预补偿——命令位置对齐整步网格（细分步 256 倍数，机械坐标对齐），detent 落点钉死命令整步，预期落点 ±0.05° 级，无保持力风险（起 2026-08-17 | 止 2026-08-17 | 失败 2026-08-17 实测否定：命令对齐整步后 5 个落点 err=+87/+146/-19/+84/+87 步，与 8/16 的 92~124 步同量级无收敛，判据 ±7 步（0.05°）不达标。根因：FINISH 判定 |goal-est|≤256 即报到位 → 0 电流 → detent 力弱拉不动死区内转子 → 落点=死区内随机停位（12800↔13056 两整步 detent 间不稳定平衡）；24569（=24576-7）反复卡点证明 detent 只对恰好近整步的位置有效，无法从 ±100 步外拉回。结论：命令对齐整步不保证落点=命令整步，B 机制否定）<- 失败，转 A
 - [✓] 到位精度优化A: 移植参考 DCE 积分保持对照实验——积分保持电流钉住命令角（参考 motor.c CalcDceToOutput kp200/ki300/kd250），静态精度实测 + 摆振观察（起 2026-08-17 | 止 2026-08-17 | 验收 2026-08-17 控制方案达理论最好：仿真（固件现状逐帧镜像）理想编码器 4 目标 +0/+0/-1/-5 步全达标 ±11；实板 SETTLE 稳定后残差 90°-10/180°+24/270°+6/360°+12~15 = 编码器校准表插值残差（仿真加残差模型 [12,-10,24,6,12] 镜像复现实板）；电流无关铁证：settle 遥测 cur=-1500mA 真实命令拉不动；判据 ±11 板测 4 轮 52~62% 未达标→转新任务「重新标定编码器校准表」）<- 后做，验证参考结构精度上限
 - [ ] 重新标定编码器校准表: 修复编码器校准表插值残差——到位精度优化A 验收结论：控制方案已达标（仿真 ±5 步），实板落点残差（90°-10/180°+24/270°+6/360°+12~15 步，最差 0.169°）全部来自编码器报数偏移；方向：检查 encoder_calibrator 锚点密度/标定抖动污染（16384 锚点全表应只有 ±1.5 步量化，实测 ±24 步异常），重采锚点后重跑 SETTLE 判据轮（|err|≤±11 步）（起 2026-08-17 | 止 进行中）
+- [c] 新增仿真遥测回灌: 100Hz [TELE] 打印（t_ms,pos细分步,vel细分步/s,cur_mA,mode,state 全 %d 定点），从任务A 钩子独立为 /cl sim 数据源（勿随钩子删）；telemetry_csv.py → Simulation/telemetry.csv → run_compare_telemetry.m 校准 J/B/detent（起 2026-08-17 | 止 进行中）<- /cl sim 实测回灌数据源，烧录后配合调试；见 .cl/sim/state.md 下一步
 
 ## 仿真对照结论（2026-08-17，MATLAB 仿真，Simulation/ 目录，固件零改动）
 

@@ -68,8 +68,27 @@ static Motor_Config_T s_motor_config = {
     .posKp = 32768,                                /* 位置环增益 32（128 实测：减速窗口缩至 672 步<滑行 512→冲过目标；32→窗口 3072 步，MIN_VEL 已解死区边缘拉锯） */
     .pidKp = 10,                                   /* 速度环增益 10（5 实测堵转输出上限 636mA 推不动齿隙摩擦→卡死；10→1270mA 冲破；MIN_VEL 防假速度拉锯） */
     .pidKd = 400,                                  /* 速度环阻尼 400（8/13 已验证；800 实测饱和成 bang-bang 激励振荡） */
-    .stallProtectSwitch = true,                    /* 堵转保护默认开（8/15 后确认） */
+    .stallProtectSwitch = false,                   /* 任务A 对照实验：关堵转保护（DCE 积分保持电流可能顶格
+       误报；参考默认 enableStallProtect=false，memory config_default_enable） */
 };
+
+/* 任务A 测试钩子（DCE 积分保持落点精度对照实验，验收后删）：
+   SW2 单击 → 90°/180°/270°/360° 循环，FINISH 后打印落点误差 err=raw-goal；
+   100Hz 遥测持续打印 T:raw,vel,cur,state 观察到位保持段摆振
+   8/17 fix（沿用 B）：按键后先等 STATE_RUNNING（确认新命令已启动）再等
+   FINISH——否则按键瞬间电机仍停在旧目标（旧 FINISH 未失效）→ err 被污染 */
+#define TEST_A_GOAL_NUM 4U
+static const int32_t s_test_a_goals[TEST_A_GOAL_NUM] = {
+    USR_MOTOR_SUBDIVIDE_STEPS / 4U,                /* 90° */
+    USR_MOTOR_SUBDIVIDE_STEPS / 2U,                /* 180° */
+    USR_MOTOR_SUBDIVIDE_STEPS * 3U / 4U,           /* 270° */
+    USR_MOTOR_SUBDIVIDE_STEPS,                     /* 360° */
+};
+static uint8_t s_test_a_idx = 0U;
+static int32_t s_test_a_goal = 0;
+static uint8_t s_test_a_wait = 0U;                 /* 0=idle 1=等RUNNING 2=等FINISH */
+static uint32_t s_test_a_wait_ms = 0U;             /* 等RUNNING 超时起点（防目标附近直接 FINISH 死锁） */
+static uint32_t s_test_a_tel_cnt = 0U;             /* 100Hz 遥测节流计数 */
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -168,6 +187,101 @@ int main(void)
     TEST_TIM_AdcSampleTask();
     /* 编码器校准主循环任务（校准完成时校验数据并写 Flash） */
     USR_EncoderCalibrator_TickMainLoop();
+
+    /* 任务A 测试钩子：SW2 单击 → 90°/180°/270°/360° 循环 + 100Hz 遥测（验收后删） */
+    if (++s_test_a_tel_cnt >= 200U)
+    {
+        /* 主循环 ~20kHz / 200 = 100Hz 遥测：观察到位保持段摆振（pos 漂移/电流摆动） */
+        s_test_a_tel_cnt = 0U;
+        {
+            char tbuf[64];
+            snprintf(tbuf, sizeof(tbuf), "T:%ld,%ld,%ld,%u\r\n",
+                     (long)USR_Motor_GetRawPosition(),
+                     (long)USR_Motor_GetRawVelocity(),
+                     (long)(USR_Motor_GetCurrent() * 1000.0f),
+                     (unsigned)USR_Motor_GetState());
+            DRV_Uart_SendString(tbuf);
+        }
+    }
+    if (USR_Button_GetClick(USR_BUTTON2))
+    {
+        if (s_test_a_wait == 0U)
+        {
+            s_test_a_goal = s_test_a_goals[s_test_a_idx % TEST_A_GOAL_NUM];
+            s_test_a_idx++;
+            USR_Motor_SetMode(MODE_COMMAND_POSITION);
+            USR_Motor_SetPosition(s_test_a_goal);
+            {
+                char buf[96];
+                snprintf(buf, sizeof(buf),
+                         "[TESTA] CMD goal=%ld raw=%ld vel=%ld state=%u cal=%d\r\n",
+                         (long)s_test_a_goal, (long)USR_Motor_GetRawPosition(),
+                         (long)USR_Motor_GetRawVelocity(),
+                         (unsigned)USR_Motor_GetState(),
+                         (int)USR_Motor_IsCalibrated());
+                DRV_Uart_SendString(buf);
+            }
+            s_test_a_wait = 1U;
+            s_test_a_wait_ms = HAL_GetTick();
+        }
+    }
+    else if (s_test_a_wait == 1U)
+    {
+        /* 等待新命令启动（RUNNING）→ 再等 FINISH，防旧 FINISH 污染；
+           目标附近（|goal-raw|≤死区）电机直接 FINISH 不经过 RUNNING，
+           超时 500ms 仍无 RUNNING → 视为到位，转等 FINISH（8/17 实测死锁修复） */
+        if (USR_Motor_GetState() == STATE_RUNNING)
+        {
+            s_test_a_wait = 2U;
+        }
+        else if ((HAL_GetTick() - s_test_a_wait_ms) > 500U)
+        {
+            s_test_a_wait = 2U;
+        }
+    }
+    else if (s_test_a_wait == 2U)
+    {
+        if (USR_Motor_GetState() == STATE_FINISH)
+        {
+            int32_t err = USR_Motor_GetRawPosition() - s_test_a_goal;
+            if (err > (int32_t)USR_MOTOR_SUBDIVIDE_STEPS / 2)
+            {
+                err -= (int32_t)USR_MOTOR_SUBDIVIDE_STEPS;
+            }
+            else if (err < -(int32_t)USR_MOTOR_SUBDIVIDE_STEPS / 2)
+            {
+                err += (int32_t)USR_MOTOR_SUBDIVIDE_STEPS;
+            }
+            char buf[40];
+            snprintf(buf, sizeof(buf), "[TESTA] FINISH goal=%ld err=%ld\r\n",
+                     (long)s_test_a_goal, (long)err);
+            DRV_Uart_SendString(buf);
+            s_test_a_wait = 3U;
+            s_test_a_wait_ms = HAL_GetTick();
+        }
+    }
+    else if (s_test_a_wait == 3U)
+    {
+        /* settle wait 3s: hold integral ramps to HOLD_MA in ~1.2s at
+           1500mA (ki*err accumulation), then spring pulls rotor in ~1s */
+        if ((HAL_GetTick() - s_test_a_wait_ms) >= 3000U)
+        {
+            int32_t err = USR_Motor_GetRawPosition() - s_test_a_goal;
+            if (err > (int32_t)USR_MOTOR_SUBDIVIDE_STEPS / 2)
+            {
+                err -= (int32_t)USR_MOTOR_SUBDIVIDE_STEPS;
+            }
+            else if (err < -(int32_t)USR_MOTOR_SUBDIVIDE_STEPS / 2)
+            {
+                err += (int32_t)USR_MOTOR_SUBDIVIDE_STEPS;
+            }
+            char buf[40];
+            snprintf(buf, sizeof(buf), "[TESTA] SETTLE goal=%ld err=%ld\r\n",
+                     (long)s_test_a_goal, (long)err);
+            DRV_Uart_SendString(buf);
+            s_test_a_wait = 0U;
+        }
+    }
   }
   /* USER CODE END 3 */
 }

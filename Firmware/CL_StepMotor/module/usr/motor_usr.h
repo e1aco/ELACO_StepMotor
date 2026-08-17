@@ -94,6 +94,33 @@ extern "C" {
 #define USR_MOTOR_STALL_TIME_US   1000000U /* 堵转判定时长（µs） */
 #define USR_MOTOR_STALL_VEL_MAX   (USR_MOTOR_SUBDIVIDE_STEPS / 5)  /* 堵转速度上限 */
 
+/* DCE 双闭环参数（任务A 对照实验，复刻参考 motor.c CalcDceToOutput 逐值照搬，
+   依据 .cl/memory/ config_default_pid dce=kp200/kv80/ki300/kd250，来源: 推导） */
+#define USR_MOTOR_DCE_KP       200   /* 位置误差增益（outputKp=kp×pError，定点 >>10 输出） */
+#define USR_MOTOR_DCE_KV       80    /* 速度误差积分增益（积分项 ki×pError+kv×vError） */
+#define USR_MOTOR_DCE_KI       300   /* 位置误差积分增益 */
+#define USR_MOTOR_DCE_KD       250   /* 速度误差微分增益（outputKd=kd×vError，定点 >>10 输出） */
+#define USR_MOTOR_DCE_PERR_MAX 3200  /* 位置误差限幅（复刻参考 motor.c:156） */
+#define USR_MOTOR_DCE_VERR_MAX 4000  /* 速度误差限幅（参考 >>7 后空间，motor.c:158） */
+
+/* 第2轮反馈免疫（方案A）：拒跳变+抗饱和已断假速度源头，电流限幅恢复额定
+   （第1轮 2000mA 顶格→读数钉死 2.7s 的根因是假速度自激/积分顶格滞留，
+   已被拒跳变+抗饱和处理；500mA 仅额定 25% 不满足正常工况，用户决定恢复） */
+#define USR_MOTOR_DCE_CUR_MAX  2000  /* DCE 输出/积分限幅（mA，=ratedCurrent 额定值） */
+#define USR_MOTOR_POS_JUMP_MAX 32    /* 位置增量拒跳变阈值（步/帧@20kHz；额定速度 5.1 步/帧，
+                                       磁干扰跳变实测 ±400 步/帧 → 取 32 有 6 倍裕量） */
+/* 变体 B 保持段（仿真 firmware_controller.m:375-403，8/17 仿真对照达标 ±1~7 步）：
+   保持段 |err|≤入界阈值 → focpos=location 钉命令角（电角平衡 θ≡goal，磁弹簧刚度
+   Kt·|I|·Nr 抵抗 detent）+ 输出限 ±HOLD_MA（detent 0.03Nm / Kt≈0.152~0.215 需
+   ≥140~200mA；8/17 板测第1轮 300mA 落点偏 detent 13 步、第2轮 500mA 时目标相关
+   残余 90°-13/180°+27/270°+6/360°+15（校准残差非周期，err∝1/I）→ 提至 1500mA
+   预计最差 27→9 达标 ±11）；|err|>出界阈值 → 运动段 est±256 旋转拖
+   （同 S_CalcCurrentToOutput）。入 128/出 256 滞回防边界抖动相位反复切换
+   （仿真 |err|≤256 直切，板端移植待办①，依据 .cl/memory/ motor_dce_hold_ma） */
+#define USR_MOTOR_DCE_KEEP_WIN  256U  /* 保持段出界阈值（细分步，对齐仿真 keep_win） */
+#define USR_MOTOR_DCE_KEEP_HYS  128U  /* 保持段入界阈值（细分步，2:1 滞回） */
+#define USR_MOTOR_DCE_HOLD_MA   1500U /* 保持段电流限幅（mA，8/17 R2 500→R3 1500） */
+
 /* ==== 类型定义 ==== */
 /* 电机模式（对齐参考 motor.h，最小闭环仅实现 STOP/POSITION/VELOCITY/CURRENT，其余回 STOP） */
 typedef enum {

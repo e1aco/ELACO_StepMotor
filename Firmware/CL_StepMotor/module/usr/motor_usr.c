@@ -45,6 +45,13 @@ static int32_t s_est_velocity_integral = 0;
 static int32_t s_est_lead_position = 0;      /* 超前角补偿量（细分步，运动随速递减） */
 static int32_t s_est_position = 0;           /* 控制用估计位置（=实测+超前角，任务6已加） */
 
+/* DCE 积分器状态（任务A 对照实验，复刻参考 motor.c CalcDceToOutput/ClearIntegral：
+   integralRound 定点 2^7 余数累加、outputKi 定点 2^10 积分输出（参考 motor.c:165-175）） */
+static int32_t s_dce_integral_round = 0;     /* 积分余数累加器（>>7 溢出到 outputKi） */
+static int32_t s_dce_integral_remainder = 0; /* 本次溢出量（7bit 定点） */
+static int32_t s_dce_output_ki = 0;          /* 积分项输出（定点 2^10，限 ±ratedCurrent<<10） */
+static bool    s_dce_hold = false;           /* 保持段标志（变体 B：相位钉命令角+限流） */
+
 /* 目标值 */
 static int32_t s_goal_position = 0;
 static int32_t s_goal_velocity = 0;
@@ -221,248 +228,180 @@ static void S_CalcCurrentToOutput(int32_t current)
  */
 static void S_CalcVelocityP(int32_t goal_vel);   /* 前向声明（内环定义在外环之后） */
 
-/* vel_goal 上一帧值（限斜率用，外环静态状态） */
-static int32_t s_vel_goal_last = 0;
-/* 死区状态（滞回）：1=死区外驱动中，0=死区内归零。
-   出界触发驱动，回中心（|err|<HYST）才归零 → 防边缘漂移极限环 */
-static uint8_t s_db_active = 0U;
-/* 死区制动倒计时（帧）：进入死区后先刹停残余速度（过冲小）再 0 电流。
-   8/15 实测：保持力电流 → 编码器磁干扰 → 假速度 ±100000 → 位置环误判
-   → 摆动 ±260（180° 段）；0 电流无磁干扰但残余速度滑行过冲；
-   一次性制动（有限帧）→ 无持续速度环 → 无假速度自激 */
-static uint16_t s_db_brake_cnt = 0U;
+/* DCE 双闭环（任务A 对照实验：完整替换串级位置环，逐值复刻参考 motor.c CalcDceToOutput
+   （motor.c:149-192，唯一差异=命名/宏参数/注释）。无死区/无 0 电流/无 MIN_VEL——
+   积分保持电流把位置钉住命令角（对照任务B：0 电流 detent 随机停位）。
+   变体 B（8/17 仿真对照达标 ±1~7 步，仿真 s_calc_dce_to_output）：
+   保持段（|err|≤入界 128，滞回出界 256）focpos=location 钉命令角 → 磁弹簧刚度
+   Kt·|I|·Nr 抵抗 detent + 输出限 ±300mA；运动段 est±256 旋转拖（同
+   S_CalcCurrentToOutput）。
+   风险（8/15 方案Y 实测）：保持电流→编码器磁干扰→假速度 ±100000→kv/kd 项吃
+   速度误差→摆振——本实验核心观察点（拒跳变+抗饱和已断假速度源头） */
+static void S_CalcDceToOutput(int32_t location, int32_t speed)
+{
+    int32_t p_error = location - s_est_position;
+    int32_t v_error = (speed - s_est_velocity) >> 7;
+    int32_t output_kp;
+    int32_t output_kd;
+    int32_t output;
+    int32_t ki_limit;
+    int32_t out_limit;
+
+    /* 误差限幅（复刻参考 motor.c:156-159） */
+    if (p_error > (int32_t)USR_MOTOR_DCE_PERR_MAX)
+    {
+        p_error = (int32_t)USR_MOTOR_DCE_PERR_MAX;
+    }
+    else if (p_error < -(int32_t)USR_MOTOR_DCE_PERR_MAX)
+    {
+        p_error = -(int32_t)USR_MOTOR_DCE_PERR_MAX;
+    }
+    if (v_error > (int32_t)USR_MOTOR_DCE_VERR_MAX)
+    {
+        v_error = (int32_t)USR_MOTOR_DCE_VERR_MAX;
+    }
+    else if (v_error < -(int32_t)USR_MOTOR_DCE_VERR_MAX)
+    {
+        v_error = -(int32_t)USR_MOTOR_DCE_VERR_MAX;
+    }
+
+    /* 变体 B 保持段状态（仿真 firmware_controller.m:375-403）：滞回入界
+       |err|≤KEEP_HYS、出界 |err|>KEEP_WIN；须先于积分/输出计算（保持段
+       积分/限幅/kd 均依赖该状态） */
+    {
+        int32_t err = USR_Cycle_Sub(location, s_est_position,
+                                    (int32_t)USR_MOTOR_SUBDIVIDE_STEPS);
+
+        if (s_dce_hold)
+        {
+            if ((err > (int32_t)USR_MOTOR_DCE_KEEP_WIN)
+                    || (err < -(int32_t)USR_MOTOR_DCE_KEEP_WIN))
+            {
+                s_dce_hold = false;
+            }
+        }
+        else if ((err <= (int32_t)USR_MOTOR_DCE_KEEP_HYS)
+                 && (err >= -(int32_t)USR_MOTOR_DCE_KEEP_HYS))
+        {
+            s_dce_hold = true;
+        }
+    }
+
+    /* 分段限幅：保持段收紧到 ±HOLD_MA（防运动段饱和积分隐藏弹簧反向猛推跑飞，
+       依据 .cl/memory/ motor_dce_runaway_root_cause） */
+    if (s_dce_hold)
+    {
+        ki_limit = (int32_t)USR_MOTOR_DCE_HOLD_MA << 10;
+        out_limit = (int32_t)USR_MOTOR_DCE_HOLD_MA;
+    }
+    else
+    {
+        ki_limit = (int32_t)USR_MOTOR_DCE_CUR_MAX << 10;
+        out_limit = (int32_t)USR_MOTOR_DCE_CUR_MAX;
+    }
+
+    /* 位置项（参考 motor.c:162） */
+    output_kp = (int32_t)USR_MOTOR_DCE_KP * p_error;
+
+    /* 积分项（参考 motor.c:165-175）：位置误差+速度误差混合积分，7bit 定点溢出；
+       第3轮：保持段仅位置误差积分（速度项入段瞬间 soft_vel 未归零会冲击积分） */
+    if (s_dce_hold)
+    {
+        s_dce_integral_round += (int32_t)USR_MOTOR_DCE_KI * p_error;
+    }
+    else
+    {
+        s_dce_integral_round += ((int32_t)USR_MOTOR_DCE_KI * p_error
+                                 + (int32_t)USR_MOTOR_DCE_KV * v_error);
+    }
+    s_dce_integral_remainder = s_dce_integral_round >> 7;
+    s_dce_integral_round -= (s_dce_integral_remainder << 7);
+
+    /* 第2轮反馈免疫：积分抗饱和——已到限幅且本帧同向累积则丢弃（防顶格滞留/超调回摆） */
+    if ((s_dce_integral_remainder > 0) && (s_dce_output_ki >= ki_limit))
+    {
+        s_dce_integral_remainder = 0;
+    }
+    else if ((s_dce_integral_remainder < 0) && (s_dce_output_ki <= -ki_limit))
+    {
+        s_dce_integral_remainder = 0;
+    }
+    s_dce_output_ki += s_dce_integral_remainder;
+
+    /* 积分限幅（定点 2^10 空间，第2轮改用 DCE 专用限幅防磁干扰） */
+    if (s_dce_output_ki > ki_limit)
+    {
+        s_dce_output_ki = ki_limit;
+    }
+    else if (s_dce_output_ki < -ki_limit)
+    {
+        s_dce_output_ki = -ki_limit;
+    }
+
+    /* 微分项（参考 motor.c:178）；第3轮：保持段剔除（速度项入段瞬间会冲击输出） */
+    output_kd = (s_dce_hold) ? 0 : ((int32_t)USR_MOTOR_DCE_KD * v_error);
+
+    /* 输出合成（定点 2^10 → mA） */
+    output = (output_kp + s_dce_output_ki + output_kd) >> 10;
+
+    /* 输出限幅（第2轮改用 DCE 专用限幅防磁干扰钉死；保持段 ±HOLD_MA） */
+    if (output > out_limit)
+    {
+        output = out_limit;
+    }
+    else if (output < -out_limit)
+    {
+        output = -out_limit;
+    }
+
+    /* 变体 B 保持段相位：保持段 focpos=location 钉命令角（电角平衡 θ≡goal → 磁弹簧
+       刚度 Kt·|I|·Nr 抵抗 detent，依据 .cl/memory/ motor_dce_hold_pin）；
+       运动段 est±256 旋转拖（同 S_CalcCurrentToOutput 相位逻辑） */
+    {
+        int32_t foc_pos;
+
+        if (s_dce_hold)
+        {
+            foc_pos = location % (int32_t)USR_MOTOR_SUBDIVIDE_STEPS;
+            if (foc_pos < 0)
+            {
+                foc_pos += (int32_t)USR_MOTOR_SUBDIVIDE_STEPS;
+            }
+        }
+        else if (output > 0)
+        {
+            foc_pos = s_est_position + (int32_t)USR_MOTOR_SOFT_DIVIDE;
+        }
+        else if (output < 0)
+        {
+            foc_pos = s_est_position - (int32_t)USR_MOTOR_SOFT_DIVIDE;
+        }
+        else
+        {
+            foc_pos = s_est_position;
+        }
+
+        s_foc_position = foc_pos;
+        s_foc_current = output;
+        USR_TB67H450_SetFocCurrentVector((uint32_t)foc_pos, output);
+    }
+}
 
 /**
  * @输入 无
  * @输出 无
  * @说明 清控制环状态（新曲线/断电/刹车时调用）：
- *   速度环阻尼基准对齐当前速度（防阻尼阶跃反冲）+
- *   位置环限斜率/死区状态复位（重新爬坡/重新判定）
- *   依据 .cl/memory/ motor_arrival_brake_ms
- *   + 复刻参考 motor.c ClearIntegral（本项目无积分器）
+ *   速度环阻尼基准对齐当前速度（防阻尼阶跃反冲）+ DCE 积分器清零（防旧曲线
+ *   积分残留驱动新曲线）
+ *   依据 复刻参考 motor.c ClearIntegral（清 pid/dce 积分三项，motor.c:194-203）
  */
 static void S_ClearIntegral(void)
 {
     s_vel_last = s_est_velocity;
-    s_vel_goal_last = 0;
-    s_db_active = 0U;
-    s_db_brake_cnt = 0U;
-}
-
-static void S_CalcPositionCascade(int32_t goal_pos)
-{
-    int32_t err = goal_pos - s_est_position;
-    int32_t vel_goal;
-    int32_t deadband = (int32_t)USR_MOTOR_POS_DEADBAND;
-
-    /* planner 未完成（软目标≠最终目标）：轨迹速度主导 + P 修正（8/16）
-       根因：planner 减速段软目标爬升慢 → 位置环 err 长期滞留低速区
-       （vel_goal < 假速度 ±25000~40000）→ 速度环被编码器磁干扰假速度
-       主导 → ±2A 猛摆极限环（8/16 实测 POSITION 长行程 vel ±1~3.8 圈/s，
-       pos 微摆不收敛）。改为 vel_goal=planner 轨迹速度+位置修正 →
-       速度环跟踪连续轨迹（无假速度主导机会）；planner 完成时 real 贴
-       soft → 小 err 交棒下方 8/15 整形 → 死区收敛 */
-    if (goal_pos != s_goal_position)
-    {
-        vel_goal = s_soft_velocity + ((s_config->posKp * err) >> 10);
-        if (vel_goal > s_config->ratedVelocity)
-        {
-            vel_goal = s_config->ratedVelocity;
-        }
-        else if (vel_goal < -s_config->ratedVelocity)
-        {
-            vel_goal = -s_config->ratedVelocity;
-        }
-        /* 低速直驱（8/16）：vel_goal 落假速度区（≤25000 步/s，planner 减速
-           尾段 soft_vel→0 时）→ 速度环被假速度主导摆荡 → 改位置环误差直驱
-           电流（用 s_real_position 免超前角污染，磁干扰只污染速度估计） */
-        if ((vel_goal <= (int32_t)USR_MOTOR_FAKE_VEL_MAX)
-                && (vel_goal >= -(int32_t)USR_MOTOR_FAKE_VEL_MAX))
-        {
-            int32_t cur = goal_pos - s_real_position;
-            if (cur > s_config->ratedCurrent)
-            {
-                cur = s_config->ratedCurrent;
-            }
-            else if (cur < -s_config->ratedCurrent)
-            {
-                cur = -s_config->ratedCurrent;
-            }
-            s_vel_goal_last = 0;
-            S_CalcCurrentToOutput(cur);
-            return;
-        }
-        int32_t dv = vel_goal - s_vel_goal_last;
-        if (dv > (int32_t)USR_MOTOR_VEL_GOAL_ACC)
-        {
-            vel_goal = s_vel_goal_last + (int32_t)USR_MOTOR_VEL_GOAL_ACC;
-        }
-        else if (dv < -(int32_t)USR_MOTOR_VEL_GOAL_ACC)
-        {
-            vel_goal = s_vel_goal_last - (int32_t)USR_MOTOR_VEL_GOAL_ACC;
-        }
-        s_vel_goal_last = vel_goal;
-        s_db_active = 0U;   /* 交棒：planner 完成走归零段（制动+0 电流） */
-        S_CalcVelocityP(vel_goal);
-        return;
-    }
-
-    /* 绕回窗口判定用固定目标 s_goal_position（goal_pos=planner 软目标逼近时边界抖动） */
-    int32_t goal_fix = s_goal_position;
-
-    /* 绕回窗口内死区加大（128→256）：0° 处弹性/毛刺摆动 ±250 > 128 →
-       频繁出界驱动 → 摆动自激（8/15 MODE_POSITION 实测 33 行）；
-       256 吞掉摆动 → 不出界不驱动 → 自由衰减静止 */
-    if ((goal_fix > ((int32_t)USR_MOTOR_SUBDIVIDE_STEPS - (int32_t)USR_MOTOR_POS_WRAP_WIN))
-            && (goal_fix < ((int32_t)USR_MOTOR_SUBDIVIDE_STEPS + (int32_t)USR_MOTOR_POS_WRAP_WIN)))
-    {
-        deadband = (int32_t)USR_MOTOR_POS_DEADBAND_WRAP;
-    }
-
-    if (s_db_active != 0U)
-    {
-        /* 归零窗口：err ∈ [+HYST, +DEADBAND]（目标下方 16~死区 步）。
-           BUG 记录（8/15）：原对称归零 |err|<16 → 归零后机械正向回弹
-           （齿隙弹性恒 +123 步）恒出界 → 推回量≡回弹量恒等平衡 → 极限环
-           （180° 实测 26 行 25609↔25766）；目标下方归零 → 正向回弹把
-           位置带回死区中心 → 一次收敛 */
-        if ((err >= (int32_t)USR_MOTOR_POS_DB_HYST)
-                && (err <= deadband))
-        {
-            s_db_active = 0U;
-            s_db_brake_cnt = USR_MOTOR_POS_DB_BRAKE_MS;   /* 进入死区：先刹停残余速度 */
-        }
-    }
-    else if ((err > deadband)
-            || (err < -deadband))
-    {
-        s_db_active = 1U;
-    }
-
-    if (s_db_active != 0U)
-    {
-        /* 死区映射：出界 → 削死区（保持符号）；滞回残留（|err|≤死区）→ 0。
-           BUG 记录（8/15）：残留区 err+128 翻转符号（err=-18→+110）被 MIN_VEL
-           钳位放大成反向猛推 → 0°/90° 到位摆动极限环（实测 17~23 行） */
-        if (err > deadband)
-        {
-            err -= deadband;
-        }
-        else if (err < -deadband)
-        {
-            err += deadband;
-        }
-        else
-        {
-            err = 0;
-        }
-
-        if (err > (int32_t)USR_MOTOR_POS_ERR_MAX)
-        {
-            err = (int32_t)USR_MOTOR_POS_ERR_MAX;
-        }
-        else if (err < -(int32_t)USR_MOTOR_POS_ERR_MAX)
-        {
-            err = -(int32_t)USR_MOTOR_POS_ERR_MAX;
-        }
-
-        /* 位置环：误差→速度目标（串级外环输出限幅=内环额定速度） */
-        vel_goal = (s_config->posKp * err) >> 10;
-        if (vel_goal > s_config->ratedVelocity)
-        {
-            vel_goal = s_config->ratedVelocity;
-        }
-        else if (vel_goal < -s_config->ratedVelocity)
-        {
-            vel_goal = -s_config->ratedVelocity;
-        }
-        /* 死区外最小推进速度钳位（8/15 整形，planner 完成段）：仅 |err|>减速窗口
-           强制 MIN_VEL 推进（推得动 > 假速度）；减速窗口内 32×err 线性下坡低速
-           进死区 → 落点无过冲。8/16 注：此块仅在 planner 完成（软目标=最终目标）
-           后生效——planner 段已由轨迹速度主导（见函数头），无 MIN_VEL 冲过问题 */
-        if ((err != 0)
-                && ((err > (int32_t)USR_MOTOR_POS_MIN_VEL_DS)
-                    || (err < -(int32_t)USR_MOTOR_POS_MIN_VEL_DS)))
-        {
-            int32_t min_vel = (int32_t)USR_MOTOR_POS_MIN_VEL;
-            if ((goal_fix > ((int32_t)USR_MOTOR_SUBDIVIDE_STEPS - (int32_t)USR_MOTOR_POS_WRAP_WIN))
-                    && (goal_fix < ((int32_t)USR_MOTOR_SUBDIVIDE_STEPS + (int32_t)USR_MOTOR_POS_WRAP_WIN)))
-            {
-                min_vel = (int32_t)USR_MOTOR_POS_MIN_VEL_WRAP;
-            }
-
-            if ((vel_goal >= 0) && (vel_goal < min_vel))
-            {
-                vel_goal = min_vel;
-            }
-            else if ((vel_goal < 0) && (vel_goal > -min_vel))
-            {
-                vel_goal = -min_vel;
-            }
-        }
-
-        /* 低速直驱（8/16）：MIN_VEL 未钳位的 vel_goal 落假速度区（≤25000 步/s）
-           → 速度环被假速度主导摆荡 → 改位置环误差直驱电流（用 s_real_position
-           免超前角污染）→ err 单调衰减 → 死区 0 电流收敛 */
-        if ((vel_goal <= (int32_t)USR_MOTOR_FAKE_VEL_MAX)
-                && (vel_goal >= -(int32_t)USR_MOTOR_FAKE_VEL_MAX))
-        {
-            int32_t cur = goal_fix - s_real_position;
-            if (cur > s_config->ratedCurrent)
-            {
-                cur = s_config->ratedCurrent;
-            }
-            else if (cur < -s_config->ratedCurrent)
-            {
-                cur = -s_config->ratedCurrent;
-            }
-            s_vel_goal_last = 0;
-            S_CalcCurrentToOutput(cur);
-            return;
-        }
-
-        /* 输出限斜率（简易轨迹整形）：vel_goal 每帧变化 ≤ ACC，
-           长行程满速冲入改为受控加减速 → 到位速度≈0 → 无过冲振荡 */
-        int32_t dv = vel_goal - s_vel_goal_last;
-        if (dv > (int32_t)USR_MOTOR_VEL_GOAL_ACC)
-        {
-            vel_goal = s_vel_goal_last + (int32_t)USR_MOTOR_VEL_GOAL_ACC;
-        }
-        else if (dv < -(int32_t)USR_MOTOR_VEL_GOAL_ACC)
-        {
-            vel_goal = s_vel_goal_last - (int32_t)USR_MOTOR_VEL_GOAL_ACC;
-        }
-        s_vel_goal_last = vel_goal;
-    }
-    else
-    {
-        /* 归零：先一次性制动（刹停残余速度 → 过冲小），后 0 电流（衰减微振）。
-           BUG 记录（8/15）：保持力电流 → 编码器磁干扰 → 假速度 ±100000 →
-           位置环误判 → 摆动 ±260（180° 段）→ 删除保持力；
-           0 电流无磁干扰，但残余速度滑行过冲 → 制动 10ms 刹停；
-           绕回窗口（目标≈编码器 0 点）直接 0 电流（0° 毛刺假速度 ±40000
-           会让制动输出波动推位置 → 摆动，实测 0 电流衰减收敛） */
-        if ((goal_fix > ((int32_t)USR_MOTOR_SUBDIVIDE_STEPS - (int32_t)USR_MOTOR_POS_WRAP_WIN))
-                && (goal_fix < ((int32_t)USR_MOTOR_SUBDIVIDE_STEPS + (int32_t)USR_MOTOR_POS_WRAP_WIN)))
-        {
-            s_vel_goal_last = 0;
-            S_CalcCurrentToOutput(0);
-        }
-        else if (s_db_brake_cnt > 0U)
-        {
-            s_db_brake_cnt--;
-            s_vel_goal_last = 0;
-            S_CalcVelocityP(0);
-        }
-        else
-        {
-            s_vel_goal_last = 0;
-            S_CalcCurrentToOutput(0);
-        }
-        return;
-    }
-
-    S_CalcVelocityP(vel_goal);
+    s_dce_integral_round = 0;
+    s_dce_integral_remainder = 0;
+    s_dce_output_ki = 0;
+    s_dce_hold = false;   /* 保持段复位（新曲线/断电/刹车从运动段重新进入） */
 }
 
 /**
@@ -560,9 +499,10 @@ void USR_Motor_Init(void)
     s_foc_position = 0;             /* FOC 输出电角度清零（细分步） */
     s_foc_current = 0;              /* FOC 输出电流清零（mA） */
     s_vel_last = 0;
-    s_vel_goal_last = 0;
-    s_db_active = 0U;
-    s_db_brake_cnt = 0U;
+    s_dce_integral_round = 0;
+    s_dce_integral_remainder = 0;
+    s_dce_output_ki = 0;
+    s_dce_hold = false;
 
     /* 装配 planner（SetConfig 已注入时；复刻参考 Motor_Init 挂 g_motion_config） */
     if (NULL != s_config)
@@ -661,6 +601,15 @@ void USR_Motor_Tick20kHz(void)
     s_real_lap_position = (int32_t)rectified;
     delta = USR_Cycle_Sub(s_real_lap_position, s_real_lap_position_last,
                           (int32_t)USR_MOTOR_SUBDIVIDE_STEPS);
+
+    /* 第2轮反馈免疫：拒跳变（磁干扰位置跳变 ±400 步/帧，物理最大 5.1 步/帧；
+       跳变帧 delta 置 0 并回退单圈锚点，避免假速度/位置冲击控制环与 FOC 角） */
+    if ((delta > (int32_t)USR_MOTOR_POS_JUMP_MAX)
+            || (delta < -(int32_t)USR_MOTOR_POS_JUMP_MAX))
+    {
+        delta = 0;
+        s_real_lap_position = s_real_lap_position_last;
+    }
     s_delta_sum += delta;
     s_real_position_last = s_real_position;
     s_real_position += delta;
@@ -731,7 +680,9 @@ void USR_Motor_Tick20kHz(void)
             case MODE_COMMAND_POSITION:
             case MODE_COMMAND_TRAJECTORY:
             case MODE_PWM_POSITION:
-                S_CalcPositionCascade(s_soft_position);
+                /* 任务A 对照实验：参考结构 DCE 直通（planner 软目标+软速度）
+                   复刻参考 motor.c:300 CalcDceToOutput(s_soft_position, s_soft_velocity) */
+                S_CalcDceToOutput(s_soft_position, s_soft_velocity);
                 break;
             case MODE_COMMAND_VELOCITY:
             case MODE_PWM_VELOCITY:
@@ -952,13 +903,27 @@ void USR_Motor_SetMode(Motor_Mode_T mode)
 }
 
 /**
- * @输入 pos: 目标位置（相对 HomeOffset 的细分步）
+ * @输入 pos: 目标位置（细分步）
  * @输出 无
- * @说明 位置命令：加 HomeOffset 存入目标
+ * @说明 位置命令：绝对空间对齐整步网格（256 细分步倍数 = detent 稳定点）后
+ *   存入目标。0 电流到位后 detent 把转子拽向最近整步 → 命令落在整步上则
+ *   落点 = 命令整步（±编码器量化），破 0.64~0.87° detent 边界限制。
+ *   8/17 任务B detent 预补偿：校准表按整步生成，物理整步 = 细分步绝对空间
+ *   256 倍数，故先加 HomeOffset 再对齐（对齐相对命令会偏离整步网格）
  */
 void USR_Motor_SetPosition(int32_t pos)
 {
-    s_goal_position = pos + s_config->encoderHomeOffset;
+    int32_t goal = pos + s_config->encoderHomeOffset;
+
+    if (goal >= 0)
+    {
+        goal = ((goal + 128) / 256) * 256;
+    }
+    else
+    {
+        goal = ((goal - 128) / 256) * 256;
+    }
+    s_goal_position = goal;
 }
 
 /**

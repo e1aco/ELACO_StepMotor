@@ -38,6 +38,7 @@ extern DRV_Flash_Area_T g_flash_data;         /* 配置数据区 0x0807F800 起 
 void DRV_Flash_AreaEmpty(DRV_Flash_Area_T *area);
 void DRV_Flash_AreaBegin(DRV_Flash_Area_T *area);
 void DRV_Flash_AreaEnd(DRV_Flash_Area_T *area);
+void DRV_Flash_AreaSetAddr(DRV_Flash_Area_T *area, uint32_t addr);
 void DRV_Flash_AreaWrite16(DRV_Flash_Area_T *area, uint16_t *data, uint32_t num);
 
 #ifdef __cplusplus

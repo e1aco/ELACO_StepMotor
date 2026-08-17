@@ -44,6 +44,8 @@
 "cl_stepmotor\button_usr.o"
 "cl_stepmotor\motor_usr.o"
 "cl_stepmotor\motion_planner_usr.o"
+"cl_stepmotor\eeprom_usr.o"
+"cl_stepmotor\config_usr.o"
 "cl_stepmotor\tim_test.o"
 --strict --scatter "CL_StepMotor\CL_StepMotor.sct"
 --summary_stderr --info summarysizes --map --load_addr_map_info --xref --callgraph --symbols

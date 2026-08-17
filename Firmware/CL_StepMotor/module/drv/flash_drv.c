@@ -79,6 +79,25 @@ void DRV_Flash_AreaEnd(DRV_Flash_Area_T *area)
 }
 
 /**
+ * @输入 area: Flash 分区表实例; addr: 写目标绝对地址（须在分区范围内）
+ * @输出 无
+ * @说明 设置写地址（对齐参考 stockpile_f103cb.c Set_Write_Add 原语，
+ *   越界地址直接忽略保持原值）
+ */
+void DRV_Flash_AreaSetAddr(DRV_Flash_Area_T *area, uint32_t addr)
+{
+    if (addr < area->begin_add)
+    {
+        return;
+    }
+    if (addr > (area->begin_add + area->area_size))
+    {
+        return;
+    }
+    area->asce_write_add = addr;
+}
+
+/**
  * @输入 area: Flash 分区表实例; data: 半字数据缓冲区; num: 半字数量
  * @输出 无
  * @说明 自 asce_write_add 起连续写入 num 个 16bit 半字，成功后写地址自增
